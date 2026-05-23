@@ -38,21 +38,52 @@ async function ensureReportsDir(): Promise<void> {
 }
 
 /**
- * Attempt to scrape website HTML and check if the given needle appears in it.
- * Returns true if found, or true if scraping fails (trust-based fallback).
+ * Fetch website HTML and check if the verification code appears anywhere in it.
+ * Throws a descriptive error if the site is unreachable or the code is not found.
  */
-async function checkCodeOnWebsite(url: string, needle: string): Promise<boolean> {
+async function checkCodeOnWebsite(url: string, code: string): Promise<{ found: boolean; error?: string }> {
+  let targetUrl = url.trim();
+  if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+    targetUrl = "https://" + targetUrl;
+  }
+
+  let html = "";
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    const resp = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "NexusSecurity-Verifier/1.0" } });
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const resp = await fetch(targetUrl, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 NexusSecurity-Ownership-Verifier/2.0",
+        "Accept": "text/html,application/xhtml+xml,*/*",
+      },
+      redirect: "follow",
+    });
     clearTimeout(timeout);
-    const html = await resp.text();
-    return html.includes(needle);
-  } catch (err) {
-    logger.warn({ err, url, needle }, "Website scrape failed — falling back to trust-based verification");
-    return true; // trust-based fallback
+
+    if (!resp.ok) {
+      return { found: false, error: `Website returned HTTP ${resp.status}. Make sure the site is publicly accessible.` };
+    }
+
+    html = await resp.text();
+  } catch (err: any) {
+    const isTimeout = err?.name === "AbortError";
+    logger.warn({ err, url: targetUrl, code }, "Website scrape failed");
+    return {
+      found: false,
+      error: isTimeout
+        ? `Request timed out. The website took too long to respond. Try again or check the URL.`
+        : `Could not reach ${targetUrl}. Make sure the URL is correct and the site is publicly accessible.`,
+    };
   }
+
+  const found = html.includes(code);
+  if (!found) {
+    logger.info({ url: targetUrl, code }, "Verification code not found on website");
+  } else {
+    logger.info({ url: targetUrl, code }, "Verification code found on website");
+  }
+  return { found };
 }
 
 router.get("/plan-prices", async (_req, res): Promise<void> => {
