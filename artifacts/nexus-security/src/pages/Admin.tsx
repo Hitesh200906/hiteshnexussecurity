@@ -17,7 +17,7 @@ export default function Admin() {
   
   const [passcode, setPasscode] = useState("");
   const [search, setSearch] = useState("");
-  const { data: users, refetch: refetchUsers } = useGetAdminUsers({ search }, { query: { enabled: !!adminCheck?.adminPanelVerified } });
+  const { data: users, refetch: refetchUsers } = useGetAdminUsers({ search }, { query: { enabled: !!adminCheck?.adminPanelVerified, queryKey: ["admin-users", search] } });
   
   const { toast } = useToast();
 

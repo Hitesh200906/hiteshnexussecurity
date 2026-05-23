@@ -9,8 +9,8 @@ import { format } from "date-fns";
 
 export default function Profile() {
   const { data: status } = useGetStatus();
-  const { data: stats } = useGetScanStats(undefined, { query: { enabled: !!status?.loggedIn } });
-  const { data: scans } = useGetScans(undefined, { query: { enabled: !!status?.loggedIn } });
+  const { data: stats } = useGetScanStats({ query: { enabled: !!status?.loggedIn, queryKey: ["scan-stats"] } });
+  const { data: scans } = useGetScans({ query: { enabled: !!status?.loggedIn, queryKey: ["scans"] } });
   
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 

@@ -252,12 +252,15 @@ router.post("/verify-code", async (req, res): Promise<void> => {
     return;
   }
 
-  // Check if the code appears on the website
-  const codeFound = await checkCodeOnWebsite(websiteUrl || job.websiteUrl, job.verificationCode);
+  // AI crawls the website and checks if the code appears anywhere in the HTML
+  const targetUrl = websiteUrl || job.websiteUrl;
+  req.log.info({ targetUrl, code: job.verificationCode }, "Crawling website to verify ownership code");
 
-  if (!codeFound) {
+  const result = await checkCodeOnWebsite(targetUrl, job.verificationCode);
+
+  if (!result.found) {
     res.status(400).json({
-      error: `Code "${job.verificationCode}" not found on ${websiteUrl}. Make sure it's visible in the page HTML.`,
+      error: result.error || `Code "${job.verificationCode}" not found on ${targetUrl}. Paste it anywhere in your page HTML (meta tag, footer div, or hidden element) and try again.`,
     });
     return;
   }

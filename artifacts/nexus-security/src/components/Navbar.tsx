@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 export function Navbar() {
   const [location, setLocation] = useLocation();
   const { data: status } = useGetStatus();
-  const { data: adminCheck } = useAdminCheck(undefined, { query: { enabled: !!status?.loggedIn }});
+  const { data: adminCheck } = useAdminCheck({ query: { enabled: !!status?.loggedIn, queryKey: ["admin-check"] } });
   const logout = useLogout();
   const queryClient = useQueryClient();
 
