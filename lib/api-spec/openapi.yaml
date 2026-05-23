@@ -1,15 +1,21 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Nexus Security API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: scans
+    description: Scan operations
+  - name: admin
+    description: Admin operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +30,333 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /status:
+    get:
+      operationId: getStatus
+      tags: [auth]
+      summary: Get current user session status
+      description: Returns the current user's session info if logged in
+      responses:
+        "200":
+          description: Session status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginCredentials"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/signup:
+    post:
+      operationId: signup
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupData"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current user
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /plan-prices:
+    get:
+      operationId: getPlanPrices
+      tags: [scans]
+      summary: Get current plan credit prices
+      responses:
+        "200":
+          description: Plan prices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanPrices"
+
+  /request-scan:
+    post:
+      operationId: requestScan
+      tags: [scans]
+      summary: Submit a scan request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanRequest"
+      responses:
+        "200":
+          description: Scan request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanRequestResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /verify-code:
+    post:
+      operationId: verifyCode
+      tags: [scans]
+      summary: Verify manual ownership code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyCodeInput"
+      responses:
+        "200":
+          description: Code verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /scans:
+    get:
+      operationId: getScans
+      tags: [scans]
+      summary: Get scan history for current user
+      responses:
+        "200":
+          description: Scan history list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanJob"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /scans/{jobId}:
+    get:
+      operationId: getScan
+      tags: [scans]
+      summary: Get details for a specific scan
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scan details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanJob"
+        "404":
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /scans/stats:
+    get:
+      operationId: getScanStats
+      tags: [scans]
+      summary: Get scan statistics summary for current user
+      responses:
+        "200":
+          description: Scan stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanStats"
+
+  /admin/check:
+    get:
+      operationId: adminCheck
+      tags: [admin]
+      summary: Check if current user is admin
+      responses:
+        "200":
+          description: Admin check result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccess"
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Login to admin panel with passcode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPasscode"
+      responses:
+        "200":
+          description: Admin login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          description: Invalid passcode
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      tags: [admin]
+      summary: Get all users for admin panel
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users/{userId}/credits:
+    post:
+      operationId: addUserCredits
+      tags: [admin]
+      summary: Add credits to a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCreditsInput"
+      responses:
+        "200":
+          description: Credits added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/plan-prices:
+    put:
+      operationId: updatePlanPrices
+      tags: [admin]
+      summary: Update plan credit prices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanPricesInput"
+      responses:
+        "200":
+          description: Prices updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanPrices"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +367,283 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    SessionStatus:
+      type: object
+      properties:
+        loggedIn:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/UserProfile"
+      required:
+        - loggedIn
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        credits:
+          type: integer
+        isAdmin:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - credits
+        - isAdmin
+        - createdAt
+
+    LoginCredentials:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        rememberMe:
+          type: boolean
+      required:
+        - email
+        - password
+
+    SignupData:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        confirmPassword:
+          type: string
+      required:
+        - name
+        - email
+        - password
+        - confirmPassword
+
+    AuthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+      required:
+        - message
+        - user
+
+    PlanPrices:
+      type: object
+      properties:
+        basic:
+          type: integer
+        advanced:
+          type: integer
+        protection:
+          type: integer
+      required:
+        - basic
+        - advanced
+        - protection
+
+    PlanPricesInput:
+      type: object
+      properties:
+        basic:
+          type: integer
+        advanced:
+          type: integer
+        protection:
+          type: integer
+      required:
+        - basic
+        - advanced
+        - protection
+
+    ScanRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        role:
+          type: string
+        companyName:
+          type: string
+        email:
+          type: string
+        websiteUrl:
+          type: string
+        businessEmail:
+          type: string
+        plan:
+          type: string
+          enum: [basic, advanced, protection]
+        verificationMethod:
+          type: string
+          enum: [email, manual]
+      required:
+        - fullName
+        - role
+        - companyName
+        - email
+        - websiteUrl
+        - businessEmail
+        - plan
+        - verificationMethod
+
+    ScanRequestResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        jobId:
+          type: string
+        verificationCode:
+          type: ["string", "null"]
+        verificationId:
+          type: ["string", "null"]
+      required:
+        - message
+        - jobId
+
+    VerifyCodeInput:
+      type: object
+      properties:
+        verificationId:
+          type: string
+        websiteUrl:
+          type: string
+      required:
+        - verificationId
+        - websiteUrl
+
+    ScanJob:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: ["integer", "null"]
+        fullName:
+          type: string
+        role:
+          type: string
+        companyName:
+          type: string
+        email:
+          type: string
+        websiteUrl:
+          type: string
+        businessEmail:
+          type: string
+        plan:
+          type: string
+        status:
+          type: string
+        creditsSpent:
+          type: integer
+        reportUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - fullName
+        - role
+        - companyName
+        - email
+        - websiteUrl
+        - businessEmail
+        - plan
+        - status
+        - creditsSpent
+        - createdAt
+
+    ScanStats:
+      type: object
+      properties:
+        totalScans:
+          type: integer
+        completedScans:
+          type: integer
+        credits:
+          type: integer
+      required:
+        - totalScans
+        - completedScans
+        - credits
+
+    AdminAccess:
+      type: object
+      properties:
+        isAdmin:
+          type: boolean
+        adminPanelVerified:
+          type: boolean
+      required:
+        - isAdmin
+        - adminPanelVerified
+
+    AdminPasscode:
+      type: object
+      properties:
+        passcode:
+          type: string
+      required:
+        - passcode
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        credits:
+          type: integer
+        totalScans:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - credits
+        - totalScans
+        - createdAt
+
+    AddCreditsInput:
+      type: object
+      properties:
+        amount:
+          type: integer
+      required:
+        - amount

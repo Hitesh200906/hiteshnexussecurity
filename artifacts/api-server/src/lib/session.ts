@@ -1,0 +1,88 @@
+import { db, sessionsTable, usersTable } from "@workspace/db";
+import { eq, and, gt } from "drizzle-orm";
+import { Request, Response } from "express";
+import { randomBytes } from "crypto";
+import { logger } from "./logger";
+
+const SESSION_COOKIE = "nexus_session";
+const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export async function createSession(userId: number, res: Response): Promise<string> {
+  const sessionId = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+
+  await db.insert(sessionsTable).values({
+    id: sessionId,
+    userId: String(userId),
+    expiresAt,
+  });
+
+  res.cookie(SESSION_COOKIE, sessionId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: SESSION_DURATION_MS,
+  });
+
+  return sessionId;
+}
+
+export async function getSessionUser(req: Request) {
+  const sessionId = req.cookies?.[SESSION_COOKIE];
+  if (!sessionId) return null;
+
+  const [session] = await db
+    .select()
+    .from(sessionsTable)
+    .where(
+      and(
+        eq(sessionsTable.id, sessionId),
+        gt(sessionsTable.expiresAt, new Date())
+      )
+    );
+
+  if (!session) return null;
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, parseInt(session.userId)));
+
+  if (!user) return null;
+
+  return { user, session };
+}
+
+export async function destroySession(req: Request, res: Response): Promise<void> {
+  const sessionId = req.cookies?.[SESSION_COOKIE];
+  if (sessionId) {
+    try {
+      await db.delete(sessionsTable).where(eq(sessionsTable.id, sessionId));
+    } catch (err) {
+      logger.error({ err }, "Failed to delete session");
+    }
+  }
+  res.clearCookie(SESSION_COOKIE);
+}
+
+export async function isAdminVerified(req: Request): Promise<boolean> {
+  const sessionId = req.cookies?.[SESSION_COOKIE];
+  if (!sessionId) return false;
+
+  const [session] = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.id, sessionId));
+
+  return session?.adminVerified === "true";
+}
+
+export async function setAdminVerified(req: Request): Promise<void> {
+  const sessionId = req.cookies?.[SESSION_COOKIE];
+  if (!sessionId) return;
+
+  await db
+    .update(sessionsTable)
+    .set({ adminVerified: "true" })
+    .where(eq(sessionsTable.id, sessionId));
+}

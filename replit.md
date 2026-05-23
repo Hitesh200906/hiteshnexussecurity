@@ -1,10 +1,11 @@
-# [Project name]
+# Nexus Security
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+AI-powered vulnerability scanner for security-conscious developers, SMBs, and enterprises — featuring dark glassmorphism UI, credit-based plan system, ownership verification, and scan reporting.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/nexus-security run dev` — run the frontend (port 20270)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -19,26 +20,43 @@ _Replace the heading above with the project's name, and this line with one sente
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
+- Frontend: React + Vite, wouter, TanStack Query, Tailwind CSS, Framer Motion
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — API contract (source of truth)
+- `lib/db/src/schema/` — DB tables: users, scan-jobs, plan-config, sessions
+- `artifacts/api-server/src/routes/` — Route handlers: auth, scans, admin
+- `artifacts/api-server/src/lib/session.ts` — Cookie-based session management
+- `artifacts/nexus-security/src/` — React frontend
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Sessions stored in PostgreSQL (no Redis) with httpOnly cookies — simple and reliable
+- Password hashing uses SHA-256 + hardcoded salt (sufficient for demo; upgrade to bcrypt for production)
+- Plan prices stored in `plan_config` table as key/value pairs so admin can update without deploys
+- Admin panel requires two-factor entry: must be the admin email account AND enter a passcode
+- Manual code verification stores verificationId in the scan_job row; code check is trust-based (checks website is provided, updates status to "queued")
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Landing page**: Hero, three scan plans (Basic/Advanced/Protection+), scan submission form with email or manual code ownership verification
+- **Login/Signup**: Tab-based auth with Google OAuth link
+- **Profile dashboard**: Credits balance, scan history, view/download reports
+- **Admin panel**: Passcode-gated, manage plan prices and add credits to users
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Dark theme only (black background, teal accent #2f9b9b)
+- No emojis in UI
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Admin login is two-step: must be logged in as `nexussecurity777@gmail.com` AND enter passcode `nexus admin` (or env var `ADMIN_PASSCODE`)
+- Demo user: `demo@nexussecurity.com` / `demo123` (15 credits)
+- Admin user: `nexussecurity777@gmail.com` / set via `hashPassword('nexus_admin_2026')`
+- Run `pnpm run typecheck:libs` after adding new DB schema files before running API server typecheck
+- Google OAuth (`/api/login/google`) is a stub — needs real OAuth implementation
 
 ## Pointers
 

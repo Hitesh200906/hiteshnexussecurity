@@ -1,0 +1,222 @@
+# 🔥 NEXUS SECURITY – COMPLETE UI REBUILD PROMPT (LINE BY LINE)
+
+## 🎯 PROJECT OVERVIEW
+You are rebuilding the **frontend UI** of Nexus Security, a professional AI‑powered vulnerability scanner. The website targets **security‑conscious developers, SMBs, and enterprises**. It features a modern, dark‑theme interface with smooth animations, glassmorphism, and a futuristic vibe. The core user journey is: **landing → plan selection → ownership verification → scan → view report → buy credits**.
+
+All pages must be **fully responsive**, accessible, and follow the existing CSS custom properties (`:root` variables) for consistency.
+
+---
+
+## 🧩 GLOBAL COMPONENTS (shared across all pages)
+
+### Navbar
+- **Logo**: `NEXUS SECURITY` in `Montserrat` font, bold, white, with a subtle text shadow.
+- **Navigation links**:  
+  - `Home` (scrolls to hero)  
+  - `Plans` (scrolls to plans section)  
+  - `Create Account` / `Profile` (dynamic based on login status)  
+  - `Admin Panel` (only visible when logged in as `nexussecurity777@gmail.com` – use an API check)
+- **Design**: sticky, glassmorphism background (`rgba(0,0,0,0.7)` + blur), teal bottom border.  
+- **Auth button**: skewed design (`transform: skew(-21deg)`) with a hover effect that fills with white and inverts text color.
+
+### Footer
+- Copyright notice: `© 2026 Nexus Security. All rights reserved. | Protecting your digital assets.`
+- Simple, centered, dark background, border top.
+
+### Message Box (Toast)
+- **Purpose**: display success/error/info messages (e.g., “Verification email sent”, “Insufficient credits”).
+- **Design**: fixed bottom‑right corner, dark background, left border color indicates type (teal for success, red for error). Auto‑disappears after 5 seconds, can be manually closed.
+
+### Modal
+- Used for confirmations (e.g., “Website Verification” question when using manual code). Centered overlay with dark glass card and buttons.
+
+---
+
+## 🏠 INDEX.HTML – LANDING PAGE
+
+### Hero Section
+- **Headline**: `AI‑Powered Scan` (large, animated fade‑up).
+- **Tagline**: `Detect security flaws before attackers do. Get detailed reports with actionable fixes.`
+- **Call‑to‑action button**: “Get Started” – animated with a fold effect and floating points. Clicking it smooth‑scrolls to the plans section.
+- **Scan type cards** (3):
+  - Basic Scan: `2–3 vulnerabilities on first pages. Free, email report.` Tag: `Ideal for quick checks`
+  - Advanced Scan: `Full website crawl. Medium & low severity bugs. Detailed guide.` Tag: `Most popular` (card has a glowing animation)
+  - Protection+ Scan: `Deep scan entire site. All vulnerabilities, critical included. Compliance mapping.` Tag: `Enterprise grade`
+- **Info stats**: three items showing `99%` Accuracy, `24h` Report time, `Profile` Delivery.
+
+### Plans Section
+- Title: `Choose Your Plan`
+- Three **plan cards** (same as above) but with full details and a **“SELECT PLAN”** button (animated with letter‑by‑letter reveal).  
+- **Dynamic pricing**: The displayed price (in credits) must be fetched from `/api/plan-prices` and updated client‑side (credit costs only, no ₹ symbols). Basic = `0 credits`, Advanced = `10 credits`, Protection+ = `25 credits` (or as set by admin).
+
+### Scan Form (initially hidden, appears after clicking “SELECT PLAN”)
+Three separate forms, one per plan, but structurally identical.
+- **Fields**:
+  - Full Name (text)
+  - Role (text)
+  - Company Name (text)
+  - Your Email (email)
+  - Website URL (url)
+  - Business Email (email)
+- **Verification method cards** (two cards with radio inputs):
+  - **Email Verification**: “We'll send a confirmation link to the business email.”
+  - **Manual Code Verification**: “Generate a 6‑character code, paste it on your website, then verify.”
+- **UI behaviour**:
+  - When user selects Email Verification → a **“Verify Now”** button appears. Clicking it submits the form to `/api/request_scan` (email path).
+  - When user selects Manual Code Verification → the code is **automatically generated** (no extra button) and a **manual code panel** appears showing the code, a copy button, instructions, and a **“Verify Code”** button.
+- **Manual code panel**:
+  - Displays a 6‑character alphanumeric code (e.g., `A3F9K2`).
+  - Copy button copies the code.
+  - Instructions: “Paste this code anywhere on your website (footer, meta tag, hidden div). Then click **Verify Code**.”
+  - “Verify Code” button sends a POST to `/api/verify_code` with the stored `verificationId` and website URL.
+
+### How Our AI Works Section
+- Text + bullet points explaining the process: Link Analysis, Page‑by‑Page Exploration, Vulnerability Detection, Smart Reporting.
+- Embedded video (autoplay, muted, loop) showing a futuristic scan visualization.
+
+### Social Follow Section
+- “Stay Connected” heading, tagline, and buttons for Instagram, X (Twitter), Facebook. Each button has hover gradient effects and transforms.
+
+---
+
+## 🔐 LOGIN.HTML – AUTHENTICATION PAGE
+
+### Particle Background
+- Animated canvas with floating teal particles that move slowly.
+
+### Auth Card (glassmorphism)
+- **Tabs**: “Login” and “Sign Up” with a sliding indicator.
+- **Login Form**:
+  - Email input (icon: envelope)
+  - Password input (icon: lock)
+  - “Remember me” checkbox + “Forgot password?” link.
+  - “LOG IN” button (same animated style as plan buttons).
+  - “or” divider.
+  - “Continue with Google” button (redirects to `/login/google`).
+- **Sign Up Form**:
+  - Full name (icon: user)
+  - Email address (icon: envelope)
+  - Password (icon: lock)
+  - Confirm password (icon: check‑circle)
+  - “SIGN UP” button.
+  - “Continue with Google” button (same as above).
+- **Responsive**: card max‑width 500px, centered.
+
+---
+
+## 👤 PROFILE.HTML – USER DASHBOARD
+
+### Layout: full‑width dashboard, not a cramped card.
+
+### Welcome Section
+- `Welcome, {{ user.name }} 👋`
+- User email (muted text)
+
+### Stats Grid (3 cards)
+- **Credits Balance**: displays `{{ user.credits or 0 }} credits`. Sub‑label: “1 credit = 1 scan (Advanced plan)”.  
+  **Action button**: “Buy Credits” – uses the animated `.pay-btn` (from Uiverse) which cycles through card, payment, dollar, wallet, check icons on hover, and shows a checkmark on click. Clicking opens Razorpay checkout (when enabled) or a prompt.
+- **Total Scans**: count of all scans.
+- **Completed Scans**: count of scans with `status='completed'`.
+
+### Scan History Section
+- Title: “Scan History”
+- **Scan cards** (each scan):
+  - Plan badge (Basic/Advanced/Protection+)
+  - Company name (instead of website URL) – bold
+  - **Two buttons** (if completed): “View Report” (toggles details + report), “Download Report” (forces download).
+  - If not completed: status badge (e.g., “queued”, “processing”).
+  - Scan meta: date/time, credits spent (if any).
+- **When “View Report” is clicked**: expands a panel below the scan card showing:
+  - **Submission details grid**: Full Name, Role, Company Name, Your Email, Business Email, Website, Plan, Status.
+  - **Report preview**: an iframe displaying the HTML report (using `/view_report/<job_id>`).
+- **Download button**: links to `/download_report/<job_id>`.
+
+### Logout Button
+- Positioned bottom right of the dashboard, styled with red background, hover effect.
+
+---
+
+## 🛡️ ADMIN.HTML – ADMIN PANEL (only accessible after passcode verification)
+
+### Access Control
+- Button in navbar for admin (only visible when logged in as `nexussecurity777@gmail.com`).
+- Clicking it redirects to `/admin/login` where the admin must enter a passcode (default `nexus admin`).
+- “Forgot passcode?” sends a reset email to the admin address.
+
+### Admin Panel Layout
+- **Two main sections**:
+
+#### 1. Plan Credit Costs Management
+- Input fields for Basic, Advanced, Protection+ (credit costs, integers).
+- “Update Prices” button. After update, the homepage plan cards should reflect new costs (requires client‑side refresh or real‑time update).
+
+#### 2. User Management
+- Search bar (filter by email).
+- Table with columns: ID, Name, Email, Credits, Total Scans, Action.
+- In the Action column: an input field to add credits and an “Add” button. Clicking adds credits to that user and refreshes the table.
+
+### Design
+- Same dark theme, card‑based layout, tables with borders.
+
+---
+
+## 📜 COMMON JAVASCRIPT FUNCTIONALITY
+
+### API Integration
+- Fetch `/api/status` to determine login state and show correct auth button.
+- Fetch `/api/admin/check` to conditionally show admin button.
+- Fetch `/api/plan-prices` on homepage to update displayed credit costs.
+- Razorpay integration (when enabled): `/api/create-order` and `/api/verify-payment`.
+
+### Form Handling
+- All forms use `fetch` with proper loading states.
+- Manual code verification:
+  - When user selects “No”, immediately call `/api/request_scan` with `emailOnSite='no'`. On success, display the code panel and populate the code.
+  - “Verify Code” button sends the verification token to `/api/verify_code` and on success redirects to profile (or shows a modal with bullet points and a “Got it” button).
+- Email verification:
+  - When user selects “Yes”, a “Verify Now” button appears. Clicking sends the form to `/api/request_scan`. Success message appears, form section hides.
+
+### Message Display
+- Use a unified `showMessage(message, isError)` function that uses either the toast or a modal (based on message content). For success messages like “Verification successful!”, a modal with a “Got it” button is used; for simple toasts, the bottom‑right box.
+
+### Responsive Behaviour
+- On mobile (<768px):
+  - Navbar stacks vertically.
+  - Cards become full‑width.
+  - Forms stack inputs.
+  - Dashboard grid becomes single column.
+
+---
+
+## 🎨 STYLING REQUIREMENTS
+
+### Colour Palette (already defined in `:root`)
+- `--accent: #2f9b9b`
+- `--bg-dark: #000000`
+- `--bg-surface: #0a0a0f`
+- `--text: #f8fafc`
+- `--text-muted: #94a3b8`
+- `--border: #1e293b`
+
+### CSS Features
+- **Glassmorphism**: `backdrop-filter: blur(12px)` on navbar and cards.
+- **Gradients**: use linear gradients for card backgrounds (e.g., popular plan).
+- **Animations**: `fadeUp`, `slideIn`, `floating-points` for hero button.
+- **Custom scrollbar**: teal thumb on dark track.
+- **Buttons**:
+  - `btn-53`: skewed, letter‑by‑letter hover animation.
+  - `.pay-btn`: icon‑rotating animation for Buy Credits.
+  - `.method-card`: hover scales and border colour changes. Selected state: teal glow, teal tint.
+
+### Icons
+- FontAwesome 6 (free) – use icons as per reference.
+
+---
+
+## ✅ FINAL DELIVERABLE
+
+You must produce **three HTML files** (`index.html`, `login.html`, `profile.html`, `admin.html`), **one CSS file** (`style.css`), and **one JS file** (`script.js`). No inline styles or scripts (except for page‑specific initialisation). All API endpoints are already implemented in the backend – you only need to call them via `fetch`.
+
+The rebuilt UI must be **pixel‑perfect**, **fully responsive**, and **interactive** exactly as described. Use the existing backend routes; do not change any endpoint logic.
+
+Now build it like a pro. 🔥
