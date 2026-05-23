@@ -15,6 +15,8 @@ export const scanJobsTable = pgTable("scan_jobs", {
   status: text("status").notNull().default("queued"),
   creditsSpent: integer("credits_spent").notNull().default(0),
   reportUrl: text("report_url"),
+  reportPath: text("report_path"),
+  externalScanId: text("external_scan_id"),
   verificationMethod: text("verification_method"),
   verificationCode: text("verification_code"),
   verificationId: text("verification_id"),

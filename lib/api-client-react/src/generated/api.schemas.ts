@@ -31,6 +31,25 @@ export interface SessionStatus {
   user?: UserProfile;
 }
 
+export interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface EmailVerifyInput {
+  email: string;
+  code: string;
+}
+
+export interface ScanCallbackInput {
+  scanId: string;
+  /** @nullable */
+  reportUrl?: string | null;
+  status: string;
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;

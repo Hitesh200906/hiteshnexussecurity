@@ -35,6 +35,30 @@ export const GetStatusResponse = zod.object({
 
 
 /**
+ * @summary Pre-signup - send 6-digit email verification code
+ */
+export const RegisterBody = zod.object({
+  "name": zod.string(),
+  "email": zod.string(),
+  "password": zod.string(),
+  "confirmPassword": zod.string()
+})
+
+export const RegisterResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Verify email code and create account
+ */
+export const VerifyEmailBody = zod.object({
+  "email": zod.string(),
+  "code": zod.string()
+})
+
+
+/**
  * @summary Login with email and password
  */
 export const LoginBody = zod.object({
@@ -232,6 +256,20 @@ export const AddUserCreditsResponse = zod.object({
   "credits": zod.number(),
   "totalScans": zod.number(),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Receive callback from external scanner with report
+ */
+export const ScanCallbackBody = zod.object({
+  "scanId": zod.string(),
+  "reportUrl": zod.string().nullish(),
+  "status": zod.string()
+})
+
+export const ScanCallbackResponse = zod.object({
+  "message": zod.string()
 })
 
 

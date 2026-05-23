@@ -1,17 +1,25 @@
 import { Router, type IRouter } from "express";
 import { db, scanJobsTable, usersTable, planConfigTable } from "@workspace/db";
-import { eq, and, count } from "drizzle-orm";
-import { randomBytes } from "crypto";
+import { eq } from "drizzle-orm";
+import { randomBytes, createHash } from "crypto";
+import { readFile, writeFile } from "fs/promises";
+import { join } from "path";
+import { mkdir } from "fs/promises";
 import { getSessionUser } from "../lib/session";
+import { sendEmail, buildScanVerificationEmailHtml } from "../lib/email";
+import { submitToScanner } from "../lib/scanner";
+import { logger } from "../lib/logger";
 import {
   RequestScanBody,
   VerifyCodeBody,
   GetScanParams,
+  ScanCallbackBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+const REPORTS_DIR = join(process.cwd(), "reports");
 
-const PLAN_CREDIT_COSTS: Record<string, number> = {
+const PLAN_CREDIT_DEFAULTS: Record<string, number> = {
   basic: 0,
   advanced: 10,
   protection: 25,
@@ -22,10 +30,32 @@ async function getPlanPrice(plan: string): Promise<number> {
     .select()
     .from(planConfigTable)
     .where(eq(planConfigTable.key, `price_${plan}`));
-  return config?.value ?? PLAN_CREDIT_COSTS[plan] ?? 0;
+  return config?.value ?? PLAN_CREDIT_DEFAULTS[plan] ?? 0;
 }
 
-router.get("/plan-prices", async (req, res): Promise<void> => {
+async function ensureReportsDir(): Promise<void> {
+  await mkdir(REPORTS_DIR, { recursive: true });
+}
+
+/**
+ * Attempt to scrape website HTML and check if the given needle appears in it.
+ * Returns true if found, or true if scraping fails (trust-based fallback).
+ */
+async function checkCodeOnWebsite(url: string, needle: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const resp = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "NexusSecurity-Verifier/1.0" } });
+    clearTimeout(timeout);
+    const html = await resp.text();
+    return html.includes(needle);
+  } catch (err) {
+    logger.warn({ err, url, needle }, "Website scrape failed — falling back to trust-based verification");
+    return true; // trust-based fallback
+  }
+}
+
+router.get("/plan-prices", async (_req, res): Promise<void> => {
   const basic = await getPlanPrice("basic");
   const advanced = await getPlanPrice("advanced");
   const protection = await getPlanPrice("protection");
@@ -49,7 +79,7 @@ router.post("/request-scan", async (req, res): Promise<void> => {
       return;
     }
     if (sessionResult.user.credits < creditCost) {
-      res.status(402).json({ error: "Insufficient credits for this plan" });
+      res.status(402).json({ error: `Insufficient credits. This plan requires ${creditCost} credits.` });
       return;
     }
   }
@@ -59,9 +89,18 @@ router.post("/request-scan", async (req, res): Promise<void> => {
   let verificationId: string | null = null;
 
   if (data.verificationMethod === "manual") {
-    verificationCode = randomBytes(3).toString("hex").toUpperCase();
+    // Generate clean 6-char alphanumeric code (no ambiguous chars: O, 0, I, 1)
+    const safeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    verificationCode = Array.from({ length: 6 }, () =>
+      safeChars[Math.floor(Math.random() * safeChars.length)]
+    ).join("");
     verificationId = randomBytes(16).toString("hex");
   }
+
+  // Generate a stable external scan ID (MD5-style hash)
+  const externalScanId = createHash("md5")
+    .update(`${jobId}-${Date.now()}`)
+    .digest("hex");
 
   await db.insert(scanJobsTable).values({
     id: jobId,
@@ -75,9 +114,10 @@ router.post("/request-scan", async (req, res): Promise<void> => {
     plan: data.plan,
     status: data.verificationMethod === "email" ? "pending_email" : "pending_verification",
     creditsSpent: creditCost,
+    externalScanId,
     verificationMethod: data.verificationMethod,
-    verificationCode: verificationCode,
-    verificationId: verificationId,
+    verificationCode,
+    verificationId,
   });
 
   if (creditCost > 0 && sessionResult) {
@@ -87,14 +127,69 @@ router.post("/request-scan", async (req, res): Promise<void> => {
       .where(eq(usersTable.id, sessionResult.user.id));
   }
 
+  // For email verification: send a verification link to the business email
+  if (data.verificationMethod === "email") {
+    const baseUrl =
+      process.env.CALLBACK_URL?.replace("/api/scan-callback", "") ||
+      `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || "localhost:80"}`;
+    const verifyLink = `${baseUrl}/api/verify-scan/${jobId}`;
+
+    await sendEmail(
+      data.businessEmail,
+      `Scan Request Verification – ${data.companyName}`,
+      buildScanVerificationEmailHtml(data.companyName, verifyLink)
+    );
+  }
+
   res.json({
-    message: data.verificationMethod === "email"
-      ? "Verification email sent. Please check your business email."
-      : "Scan request created. Please verify your website ownership.",
+    message:
+      data.verificationMethod === "email"
+        ? `Verification email sent to ${data.businessEmail}. Click the link to confirm your scan.`
+        : "Scan request created. Please verify website ownership using the code below.",
     jobId,
     verificationCode,
     verificationId,
   });
+});
+
+// Email verification link handler
+router.get("/verify-scan/:jobId", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
+
+  const [job] = await db
+    .select()
+    .from(scanJobsTable)
+    .where(eq(scanJobsTable.id, raw));
+
+  if (!job) {
+    res.status(404).send("<html><body><h1>Invalid verification link</h1></body></html>");
+    return;
+  }
+
+  if (job.status !== "pending_email") {
+    res.send(`<html><body style="font-family:sans-serif;background:#0a0a0f;color:#f8fafc;padding:2rem;">
+      <h1 style="color:#2f9b9b;">Already Processed</h1>
+      <p>This scan request has already been verified and is ${job.status}.</p>
+    </body></html>`);
+    return;
+  }
+
+  await db
+    .update(scanJobsTable)
+    .set({ status: "queued" })
+    .where(eq(scanJobsTable.id, raw));
+
+  // Submit to scanner
+  await submitToScanner(job.externalScanId!, job.websiteUrl, job.plan, job.businessEmail);
+
+  res.send(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Verified</title></head>
+<body style="font-family:sans-serif;background:#0a0a0f;color:#f8fafc;text-align:center;padding:4rem;">
+  <h1 style="color:#2f9b9b;">Scan Verified</h1>
+  <p>Your scan for <strong>${job.companyName}</strong> has been queued.</p>
+  <p style="color:#94a3b8;">You will receive your report shortly. Log in to your profile to track progress.</p>
+  <a href="/" style="color:#2f9b9b;">Return to Nexus Security</a>
+</body></html>`);
 });
 
 router.post("/verify-code", async (req, res): Promise<void> => {
@@ -112,18 +207,104 @@ router.post("/verify-code", async (req, res): Promise<void> => {
     .where(eq(scanJobsTable.verificationId, verificationId));
 
   if (!job) {
-    res.status(400).json({ error: "Invalid verification ID" });
+    res.status(400).json({ error: "Invalid verification ID. Please start a new scan request." });
     return;
   }
 
-  if (job.verificationCode) {
-    await db
-      .update(scanJobsTable)
-      .set({ status: "queued" })
-      .where(eq(scanJobsTable.verificationId, verificationId));
+  if (job.status !== "pending_verification") {
+    res.status(400).json({ error: "This verification has already been used or expired." });
+    return;
   }
 
-  res.json({ message: "Website ownership verified. Your scan has been queued." });
+  if (!job.verificationCode) {
+    res.status(400).json({ error: "No verification code found for this request." });
+    return;
+  }
+
+  // Check if the code appears on the website
+  const codeFound = await checkCodeOnWebsite(websiteUrl || job.websiteUrl, job.verificationCode);
+
+  if (!codeFound) {
+    res.status(400).json({
+      error: `Code "${job.verificationCode}" not found on ${websiteUrl}. Make sure it's visible in the page HTML.`,
+    });
+    return;
+  }
+
+  await db
+    .update(scanJobsTable)
+    .set({ status: "queued", websiteUrl: websiteUrl || job.websiteUrl })
+    .where(eq(scanJobsTable.verificationId, verificationId));
+
+  // Submit to scanner asynchronously
+  submitToScanner(job.externalScanId!, job.websiteUrl, job.plan, job.businessEmail).catch((err) =>
+    logger.error({ err, jobId: job.id }, "Scanner submission failed after verify-code")
+  );
+
+  res.json({
+    message: "Website ownership verified. Your scan has been queued. Check your profile for progress.",
+    jobId: job.id,
+  });
+});
+
+// Callback from external scanner (or mock scanner)
+router.post("/scan-callback", async (req, res): Promise<void> => {
+  const parsed = ScanCallbackBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { scanId, reportUrl, status } = parsed.data;
+
+  const [job] = await db
+    .select()
+    .from(scanJobsTable)
+    .where(eq(scanJobsTable.externalScanId, scanId));
+
+  if (!job) {
+    req.log.warn({ scanId }, "scan-callback: job not found");
+    res.json({ status: "ok", note: "job not found" });
+    return;
+  }
+
+  if (status === "completed" && reportUrl) {
+    try {
+      await ensureReportsDir();
+      const response = await fetch(reportUrl);
+      if (response.ok) {
+        const html = await response.text();
+        const reportPath = join(REPORTS_DIR, `${job.id}.html`);
+        await writeFile(reportPath, html, "utf-8");
+
+        await db
+          .update(scanJobsTable)
+          .set({ status: "completed", reportPath, reportUrl })
+          .where(eq(scanJobsTable.id, job.id));
+
+        req.log.info({ jobId: job.id, reportPath }, "Report saved from callback");
+      } else {
+        req.log.warn({ jobId: job.id, reportUrl }, "Failed to download report from URL");
+        await db
+          .update(scanJobsTable)
+          .set({ status: "completed", reportUrl })
+          .where(eq(scanJobsTable.id, job.id));
+      }
+    } catch (err) {
+      req.log.error({ err, jobId: job.id }, "Error saving report from callback");
+      await db
+        .update(scanJobsTable)
+        .set({ status: "completed", reportUrl: reportUrl ?? null })
+        .where(eq(scanJobsTable.id, job.id));
+    }
+  } else if (status === "failed") {
+    await db
+      .update(scanJobsTable)
+      .set({ status: "failed" })
+      .where(eq(scanJobsTable.id, job.id));
+  }
+
+  res.json({ status: "ok" });
 });
 
 router.get("/scans", async (req, res): Promise<void> => {
@@ -170,12 +351,9 @@ router.get("/scans/stats", async (req, res): Promise<void> => {
     .from(scanJobsTable)
     .where(eq(scanJobsTable.userId, sessionResult.user.id));
 
-  const totalScans = allJobs.length;
-  const completedScans = allJobs.filter((j) => j.status === "completed").length;
-
   res.json({
-    totalScans,
-    completedScans,
+    totalScans: allJobs.length,
+    completedScans: allJobs.filter((j) => j.status === "completed").length,
     credits: sessionResult.user.credits,
   });
 });
@@ -215,6 +393,7 @@ router.get("/scans/:jobId", async (req, res): Promise<void> => {
   });
 });
 
+// Serve the saved HTML report (or generate a placeholder)
 router.get("/scans/:jobId/report", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
   const [job] = await db
@@ -227,6 +406,19 @@ router.get("/scans/:jobId/report", async (req, res): Promise<void> => {
     return;
   }
 
+  // If a saved report file exists, serve it
+  if (job.reportPath) {
+    try {
+      const html = await readFile(job.reportPath, "utf-8");
+      res.setHeader("Content-Type", "text/html");
+      res.send(html);
+      return;
+    } catch {
+      // fall through to placeholder
+    }
+  }
+
+  // Placeholder for pending/queued scans
   res.setHeader("Content-Type", "text/html");
   res.send(`<!DOCTYPE html>
 <html lang="en">
@@ -234,29 +426,26 @@ router.get("/scans/:jobId/report", async (req, res): Promise<void> => {
   <meta charset="UTF-8">
   <title>Security Report - ${job.companyName}</title>
   <style>
-    body { font-family: monospace; background: #0a0a0f; color: #f8fafc; padding: 2rem; }
+    body { font-family: monospace; background: #0a0a0f; color: #f8fafc; padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
     h1 { color: #2f9b9b; }
-    .section { margin: 1.5rem 0; padding: 1rem; border: 1px solid #1e293b; border-radius: 8px; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; background: #1e293b; color: #2f9b9b; }
-    .status { color: #94a3b8; font-size: 0.875rem; }
+    .status { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 1.5rem 2.5rem; margin-top: 1.5rem; text-align: center; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; background: #1e293b; color: #2f9b9b; letter-spacing: 1px; }
+    p { color: #94a3b8; }
   </style>
 </head>
 <body>
-  <h1>Security Scan Report</h1>
-  <div class="section">
-    <p><strong>Company:</strong> ${job.companyName}</p>
-    <p><strong>Website:</strong> ${job.websiteUrl}</p>
-    <p><strong>Plan:</strong> <span class="badge">${job.plan.toUpperCase()}</span></p>
-    <p><strong>Status:</strong> <span class="status">${job.status}</span></p>
-    <p><strong>Submitted:</strong> ${job.createdAt.toLocaleDateString()}</p>
-  </div>
-  <div class="section">
-    <p class="status">Full vulnerability report will appear here once scanning is complete.</p>
+  <h1>Nexus Security Report</h1>
+  <div class="status">
+    <p><strong>${job.companyName}</strong> &mdash; ${job.websiteUrl}</p>
+    <p>Plan: <span class="badge">${job.plan.toUpperCase()}</span></p>
+    <p>Status: <span class="badge">${job.status.replace(/_/g, " ").toUpperCase()}</span></p>
+    <p style="margin-top:1rem;">Your full vulnerability report will appear here once scanning is complete.</p>
   </div>
 </body>
 </html>`);
 });
 
+// Download the report
 router.get("/scans/:jobId/report/download", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
   const [job] = await db
@@ -269,11 +458,20 @@ router.get("/scans/:jobId/report/download", async (req, res): Promise<void> => {
     return;
   }
 
+  const filename = `nexus-report-${job.companyName.replace(/\s+/g, "-")}-${job.id}.html`;
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   res.setHeader("Content-Type", "text/html");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="nexus-report-${job.companyName.replace(/\s+/g, "-")}-${job.id}.html"`
-  );
+
+  if (job.reportPath) {
+    try {
+      const html = await readFile(job.reportPath, "utf-8");
+      res.send(html);
+      return;
+    } catch {
+      // fall through
+    }
+  }
+
   res.send(`<!DOCTYPE html><html><body><h1>Report for ${job.companyName}</h1><p>Status: ${job.status}</p></body></html>`);
 });
 

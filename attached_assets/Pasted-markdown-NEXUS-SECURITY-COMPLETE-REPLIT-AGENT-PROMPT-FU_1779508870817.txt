@@ -1,0 +1,235 @@
+markdown
+# 🔥 NEXUS SECURITY – COMPLETE REPLIT AGENT PROMPT (FULL STACK)
+
+You are an expert full‑stack developer. Your task is to rebuild the entire **Nexus Security** web application – a professional AI‑powered vulnerability scanner – from scratch on Replit. The application must be fully functional, include all features described below, and use **Replit's built‑in database (PostgreSQL)** and environment variables.
+
+Do not use any external services except:
+- **Brevo** (for transactional emails) – you will need to configure SMTP or API.
+- **Razorpay** (optional, for credit purchase – can be mocked first).
+- **Supabase is NOT required** – we will handle authentication ourselves with email/password + Google OAuth (use Authlib).
+
+The final app must have:
+
+- User authentication (email/password + Google OAuth).
+- Email verification using 6‑digit code (custom, not Supabase).
+- Manual website ownership verification (6‑character code pasted on user's site).
+- Credit system: each plan costs a certain number of credits (Basic=0, Advanced=10, Protection+=25). Users can buy credits via Razorpay (optional, can be mocked).
+- Scan requests are sent to an external AI scanner (friend's API) – we will implement a mock scanner first, then allow configuration via environment variable.
+- Callback system: the external scanner sends a POST to `/api/scan-callback` with `scan_id` and `report_url`. The app downloads the HTML report and saves it.
+- Admin panel: only accessible to `nexussecurity777@gmail.com` with a passcode. Admin can view all users, add credits, change plan credit costs.
+- Responsive, modern UI (dark theme, glassmorphism, animations) as described.
+
+You must generate **all files**: `app.py` (Flask backend), `requirements.txt`, `templates/index.html`, `templates/login.html`, `templates/profile.html`, `templates/admin.html`, `static/style.css`, `static/script.js`, and any helper files.
+
+---
+
+## 🗄️ DATABASE MODELS (SQLAlchemy)
+
+Use **PostgreSQL** (Replit database). Create the following tables:
+
+### User
+- id (Integer, primary key)
+- email (String, unique)
+- name (String)
+- password_hash (String) – for email/password users
+- oauth_provider (String, nullable) – 'google'
+- oauth_id (String, nullable)
+- credits (Integer, default 0)
+- created_at (DateTime)
+
+### ScanJob
+- id (Integer, primary key)
+- user_id (Integer, foreign key to User.id)
+- target_url (String)
+- plan_type (String) – 'basic', 'advanced', 'protection_plus'
+- status (String) – 'queued', 'completed', 'failed'
+- created_at (DateTime)
+- completed_at (DateTime, nullable)
+- report_path (String, nullable)
+- full_name (String)
+- role (String)
+- company_name (String)
+- user_email (String)
+- business_email (String)
+- scan_id (String, unique) – ID sent to external scanner
+- credits_spent (Integer, default 0)
+
+### PendingScan
+- id (Integer, primary key)
+- user_id (Integer, foreign key)
+- full_name, role, company_name, user_email, website_url, business_email, plan_type (all String)
+- token (String, unique)
+- used (Boolean, default False)
+- created_at (DateTime)
+
+### WebsiteVerificationCode (for manual code)
+- id (Integer, primary key)
+- user_id (Integer, foreign key)
+- code (String, unique)
+- website_url (String)
+- plan_type (String)
+- form_data (JSON)
+- verified (Boolean, default False)
+- expires_at (DateTime)
+
+### Transaction (for credit purchases, optional)
+- id (Integer, primary key)
+- user_id (Integer, foreign key)
+- amount (Integer) – in INR
+- credits_added (Integer)
+- razorpay_order_id (String, nullable)
+- razorpay_payment_id (String, nullable)
+- status (String) – 'created', 'completed', 'failed'
+- created_at (DateTime)
+
+### AdminSettings
+- id (Integer, primary key, default 1)
+- passcode_hash (String)
+- credit_costs (JSON) – default `{"basic":0, "advanced":10, "protection_plus":25}`
+
+---
+
+## ⚙️ BACKEND ROUTES (`app.py`)
+
+### Authentication
+
+- `POST /api/register` – email/password signup. **After registration, generate a 6‑digit numeric code, store it temporarily (in memory or a cache), and send it via email using Brevo. Do not log the user in yet.**
+- `POST /api/verify-email` – verify the 6‑digit code. If correct, create the user in the database and log them in.
+- `POST /api/login` – email/password login (using Werkzeug check_password_hash).
+- `GET /login/google` – redirect to Google OAuth (use Authlib).
+- `GET /auth/callback` – handle Google OAuth callback, create or get user.
+- `GET /api/status` – return `{logged_in: true/false, name, email}`.
+- `GET /logout` – log out.
+
+### Plan Prices (Public)
+- `GET /api/plan-prices` – returns `{credit_costs: {...}}` (from AdminSettings). Used by frontend to display plan costs.
+
+### Scan Request (requires login)
+- `POST /api/request_scan` – receives form data (full_name, role, company_name, user_email, website_url, business_email, plan, emailOnSite).
+  - If `emailOnSite == 'yes'`: scrape the website to verify that the business email appears in the HTML. If found, create a `PendingScan` record, generate a random token, send an email with a verification link (`/verify_scan/<token>`). Return success.
+  - If `emailOnSite == 'no'`: generate a 6‑character alphanumeric code (excluding O,0,I,1), store it in `WebsiteVerificationCode` along with the form data, and return the code to the frontend. **Do not send any email.**
+
+### Email Verification Link
+- `GET /verify_scan/<token>` – find the `PendingScan`, deduct credits (if not enough, show error), create a `ScanJob` (status 'queued'), generate a unique `scan_id` (MD5 hash), and call the external scanner (`send_to_friend_scanner`). Then log the user in and redirect to `/profile`.
+
+### Manual Code Verification
+- `POST /api/verify_code` – receives `verification_id` (from frontend) and `website_url`. Fetch the `WebsiteVerificationCode` record, scrape the website to see if the code appears in the HTML. If found, mark as verified, deduct credits, create a `ScanJob`, call the external scanner, and return `{success: true, job_id: ...}`.
+
+### External Scanner Integration
+- Function `send_to_friend_scanner(scan_id, target_url, plan, user_email)`:
+  - Reads `JATIN_API_URL` from environment.
+  - POST to `${JATIN_API_URL}/api/scan/submit` with JSON: `{url, plan, scan_id, webhook_url: CALLBACK_URL}`.
+  - Logs the response. Returns the remote scan_id if successful.
+
+### Callback from Scanner
+- `POST /api/scan-callback` – expects JSON `{scan_id, report_url, status}`.
+  - Find `ScanJob` by `scan_id`.
+  - If status == 'completed' and report_url is provided, download the report (requests.get), save it to `reports/` folder, update job status to 'completed' and report_path.
+  - Return `{"status":"ok"}`.
+
+### Profile
+- `GET /profile` – renders `profile.html` with user's scans.
+
+### Download Report
+- `GET /download_report/<job_id>` – force download of the HTML report file.
+
+### Admin Routes (protected)
+- Admin is identified by email `nexussecurity777@gmail.com`.
+- `GET /api/admin/check` – returns `{is_admin: true/false}`.
+- `POST /api/admin/verify-passcode` – checks passcode against stored hash, sets session.
+- `POST /api/admin/request-reset` – sends a reset email to the admin with a one‑time link.
+- `GET /admin` – renders admin panel if admin and passcode session set.
+- `GET /api/admin/users` – returns list of all users with credits and scan count.
+- `POST /api/admin/give-credits` – adds credits to a user.
+- `POST /api/admin/update-prices` – updates `credit_costs` in `AdminSettings`.
+- `GET /api/admin/credit-costs` – returns current credit costs.
+
+### Credit Deduction Helper
+- `deduct_credits(user, plan_type)` – uses current credit costs from AdminSettings; returns True if deducted, False if insufficient.
+
+### Email Sending (Brevo)
+- Use Brevo HTTP API (not SMTP). Read `BREVO_API_KEY` and `MAIL_DEFAULT_SENDER` from environment.
+- Function `send_email_via_brevo(to_email, subject, html_content)`.
+
+---
+
+## 🌐 FRONTEND PAGES
+
+### `templates/index.html`
+- Navbar, hero, plan cards (dynamic prices fetched from `/api/plan-prices`).
+- For each plan, a hidden form section that appears when the plan button is clicked.
+- Each form contains inputs and two verification method cards.
+- JavaScript toggles between email and manual code flows (as described).
+- Manual code panel: code display, copy button, verify button.
+
+### `templates/login.html`
+- Two tabs (Login / Signup) with forms.
+- Google OAuth button redirects to `/login/google`.
+- Signup: after submission, a modal asks for the 6‑digit code sent to email.
+
+### `templates/profile.html`
+- Dashboard with stats cards, scan history, credit balance, Buy Credits button.
+- Scan cards: company name, two buttons (View Report / Download Report).
+- View Report toggles submission details + report iframe.
+
+### `templates/admin.html`
+- Two sections: Plan Credit Costs editor and User Management table with search and add‑credits.
+
+---
+
+## 🎨 STATIC FILES
+
+### `static/style.css`
+- Global variables, glassmorphism, animations (fadeUp, slideIn, etc.), responsive breakpoints.
+- Styles for method cards, scan cards, admin tables, buy credits button (icon rotation), etc.
+
+### `static/script.js`
+- Shared: update auth button, plan selection, form submission handlers, manual code generation, verify code, buy credits (Razorpay integration optional), admin button visibility, report toggle, etc.
+
+---
+
+## 🔧 ENVIRONMENT VARIABLES (must be set in Replit Secrets)
+SECRET_KEY = random key
+DATABASE_URL = postgresql://... (Replit will provide)
+MAIL_DEFAULT_SENDER = nexussecurity777@gmail.com
+BREVO_API_KEY = your Brevo API key
+JATIN_API_URL = https://your-friend-scanner.onrender.com (or mock scanner)
+CALLBACK_URL = https://your-replit-app.replit.app/api/scan-callback
+RAZORPAY_KEY_ID = (optional)
+RAZORPAY_KEY_SECRET = (optional)
+
+text
+
+---
+
+## 📦 DEPENDENCIES (`requirements.txt`)
+Flask
+Flask-SQLAlchemy
+Flask-Login
+psycopg2-binary
+requests
+beautifulsoup4
+python-dotenv
+werkzeug
+authlib
+flask-cors
+razorpay (optional)
+
+text
+
+---
+
+## 🧪 INITIAL SETUP
+- On first run, create all tables.
+- Insert default admin settings: passcode_hash = bcrypt hash of "nexus admin", credit_costs = `{"basic":0,"advanced":10,"protection_plus":25}`.
+
+---
+
+## ✅ FINAL NOTES
+- The external scanner may not be available initially; implement a **mock scanner** that returns a dummy report and sends a callback after a few seconds. Use a background thread.
+- For local testing, use `ngrok` or Replit's built‑in public URL to receive callbacks.
+- All file uploads (reports) go to `reports/` folder – ensure it exists.
+
+Your task is to implement every feature exactly as described. The result must be a fully working, deployable web application that you can test on Replit.
+
+Build it. 🔥
