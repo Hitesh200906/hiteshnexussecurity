@@ -747,180 +747,117 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="relative bg-[#050505] border-t border-primary/15 overflow-hidden">
-        {/* Cyber grid background */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
-          style={{ backgroundImage: "linear-gradient(rgba(47,155,155,1) 1px, transparent 1px), linear-gradient(90deg, rgba(47,155,155,1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
-        {/* Top glow line */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      <footer className="relative bg-[#050505] border-t border-border/40 overflow-hidden">
+        <div className="relative container mx-auto px-6 pt-14 pb-0">
 
-        <div className="relative container mx-auto px-6 pt-16 pb-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-14">
+          {/* Main columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 pb-12">
 
             {/* ── COL 1: BRAND ── */}
-            <div>
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="relative">
-                  <Shield className="w-7 h-7 text-primary" />
+            <div className="lg:col-span-1">
+              <div className="flex items-center gap-2.5 mb-3">
+                <Shield className="w-6 h-6 text-primary" />
+                <div>
+                  <span className="brand-text font-bold text-sm tracking-widest text-foreground block leading-tight">NEXUS SECURITY</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">AI Threat Intelligence</span>
                 </div>
-                <span className="brand-text font-bold text-base tracking-widest text-foreground">NEXUS SECURITY</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-6">
-                AI-powered vulnerability scanning trusted by developers, SMBs, and enterprises worldwide.
+              <p className="text-xs text-muted-foreground leading-relaxed mb-5 max-w-[220px]">
+                Empowering developers and enterprises with cutting-edge AI vulnerability scanning. Protect your assets before attackers strike.
               </p>
-              {/* Social icons */}
-              <div className="flex items-center gap-3 mb-8">
+              <div className="flex items-center gap-2">
                 {[
-                  { icon: Github, label: "GitHub" },
-                  { icon: Linkedin, label: "LinkedIn" },
                   { icon: Twitter, label: "Twitter" },
+                  { icon: Linkedin, label: "LinkedIn" },
+                  { icon: Github, label: "GitHub" },
                 ].map(({ icon: Icon, label }) => (
                   <a key={label} href="#" aria-label={label}
-                    className="w-8 h-8 border border-border/60 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/60 transition-all duration-200 group"
+                    className="w-8 h-8 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all duration-200"
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </a>
                 ))}
               </div>
-              {/* Compliance badges */}
-              <div className="flex flex-wrap gap-2">
-                {["GDPR", "SOC 2", "ISO 27001"].map(b => (
-                  <div key={b} className="flex items-center gap-1 px-2 py-1 border border-primary/20 bg-primary/5 rounded-sm">
-                    <BadgeCheck className="w-3 h-3 text-primary" />
-                    <span className="text-[10px] font-mono text-primary/80 tracking-wide">{b}</span>
-                  </div>
-                ))}
-              </div>
             </div>
 
-            {/* ── COL 2: SECURITY FEATURES ── */}
+            {/* ── COL 2: PRODUCTS ── */}
             <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-5 font-mono">Security Features</h4>
-              <div className="space-y-2.5">
+              <h4 className="text-xs font-semibold text-foreground mb-4">Products</h4>
+              <ul className="space-y-3">
                 {[
-                  { icon: Target, label: "Reconnaissance" },
-                  { icon: Brain, label: "AI Vulnerability Detection" },
-                  { icon: FileSearch, label: "Smart Reporting" },
-                  { icon: Zap, label: "Threat Intelligence" },
-                  { icon: Wifi, label: "Real-time Monitoring" },
-                ].map(({ icon: Icon, label }) => (
-                  <div key={label}
-                    className="flex items-center gap-3 p-2.5 border border-border/30 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 group cursor-default"
-                  >
-                    <div className="w-6 h-6 border border-primary/30 group-hover:border-primary/60 flex items-center justify-center shrink-0 transition-colors duration-200">
-                      <Icon className="w-3 h-3 text-primary" />
-                    </div>
-                    <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors duration-200">{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ── COL 3: TRUST & PAYMENT ── */}
-            <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-5 font-mono">Trust & Payment</h4>
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-2 mb-5">
-                {[
-                  { val: "95%", label: "Accuracy" },
-                  { val: "24h", label: "Delivery" },
-                  { val: "OWASP", label: "Top 10" },
-                  { val: "SLA", label: "12h Support" },
-                ].map(({ val, label }) => (
-                  <div key={label} className="border border-border/30 p-2 text-center">
-                    <div className="text-sm font-bold text-primary font-mono">{val}</div>
-                    <div className="text-[10px] text-muted-foreground">{label}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Payment methods */}
-              <h5 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 font-mono">Payment Methods</h5>
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {[
-                  { label: "VISA", bg: "bg-[#1a1f71]" },
-                  { label: "MC", bg: "bg-[#b92d2d]" },
-                  { label: "AMEX", bg: "bg-[#2e77bc]" },
-                  { label: "RuPay", bg: "bg-[#1a6e2e]" },
-                ].map(({ label, bg }) => (
-                  <div key={label} className={`${bg} text-white px-2.5 py-1 text-[10px] font-bold tracking-wider`}>{label}</div>
-                ))}
-                {["UPI", "Net Banking"].map(l => (
-                  <div key={l} className="border border-primary/30 text-primary px-2 py-1 text-[10px] font-medium">{l}</div>
-                ))}
-              </div>
-              {/* Currencies */}
-              <h5 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 font-mono">Currencies</h5>
-              <div className="grid grid-cols-5 gap-x-2 gap-y-1">
-                {[
-                  { flag: "🇺🇸", code: "USD" }, { flag: "🇪🇺", code: "EUR" },
-                  { flag: "🇬🇧", code: "GBP" }, { flag: "🇮🇳", code: "INR" },
-                  { flag: "🇨🇦", code: "CAD" }, { flag: "🇦🇺", code: "AUD" },
-                  { flag: "🇸🇬", code: "SGD" }, { flag: "🇦🇪", code: "AED" },
-                  { flag: "🇯🇵", code: "JPY" }, { flag: "🇨🇳", code: "CNY" },
-                ].map(({ flag, code }) => (
-                  <div key={code} className="flex flex-col items-center text-center">
-                    <span className="text-sm leading-none">{flag}</span>
-                    <span className="text-[9px] font-mono text-muted-foreground mt-0.5">{code}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ── COL 4: QUICK LINKS & PLANS ── */}
-            <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-5 font-mono">Quick Links</h4>
-              <ul className="space-y-2 mb-8">
-                {[
-                  { label: "About Us", href: "#" },
-                  { label: "Pricing", href: "#plans" },
+                  { label: "Basic Scan", href: "#plans" },
+                  { label: "Advanced Scan", href: "#plans" },
+                  { label: "Protection+ Scan", href: "#plans" },
                   { label: "API Access", href: "#" },
-                  { label: "Contact", href: "#" },
-                  { label: "Privacy Policy", href: "#" },
-                  { label: "Terms of Service", href: "#" },
-                  { label: "Refund Policy", href: "#" },
+                  { label: "Threat Intelligence", href: "#" },
                 ].map(({ label, href }) => (
                   <li key={label}>
-                    <a href={href} className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5 group">
-                      <ChevronRight className="w-2.5 h-2.5 text-primary/30 group-hover:text-primary transition-colors" />
-                      {label}
-                    </a>
+                    <a href={href} className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200">{label}</a>
                   </li>
                 ))}
               </ul>
+            </div>
 
-              {/* Plans summary */}
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-3 font-mono">Plans</h4>
-              <div className="space-y-1.5">
+            {/* ── COL 3: COMPANY ── */}
+            <div>
+              <h4 className="text-xs font-semibold text-foreground mb-4">Company</h4>
+              <ul className="space-y-3">
                 {[
-                  { name: "Basic", price: "Free", color: "text-slate-400" },
-                  { name: "Advanced", price: "10 CRD", color: "text-primary" },
-                  { name: "Protection+", price: "25 CRD", color: "text-amber-400" },
-                ].map(({ name, price, color }) => (
-                  <div key={name} className="flex items-center justify-between py-1 border-b border-border/20">
-                    <span className="text-xs text-muted-foreground">{name}</span>
-                    <span className={`text-xs font-mono font-bold ${color}`}>{price}</span>
-                  </div>
+                  { label: "About Us", href: "#" },
+                  { label: "Careers", href: "#" },
+                  { label: "Blog", href: "#" },
+                  { label: "Partners", href: "#" },
+                  { label: "Contact", href: "#" },
+                ].map(({ label, href }) => (
+                  <li key={label}>
+                    <a href={href} className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200">{label}</a>
+                  </li>
                 ))}
-              </div>
+              </ul>
+            </div>
+
+            {/* ── COL 4: RESOURCES ── */}
+            <div>
+              <h4 className="text-xs font-semibold text-foreground mb-4">Resources</h4>
+              <ul className="space-y-3">
+                {[
+                  { label: "Documentation", href: "#" },
+                  { label: "Support Center", href: "#" },
+                  { label: "Case Studies", href: "#" },
+                  { label: "Security Blog", href: "#" },
+                  { label: "Community", href: "#" },
+                ].map(({ label, href }) => (
+                  <li key={label}>
+                    <a href={href} className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200">{label}</a>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 
-          {/* Separator */}
-          <div className="h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent mb-6" />
+          {/* Divider */}
+          <div className="h-px bg-border/40" />
 
           {/* Bottom bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-5 text-[11px] text-muted-foreground">
             <p>&copy; 2026 Nexus Security. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <span className="text-primary/50 font-mono">Powered by Nexus AI</span>
-              <div className="flex items-center gap-1.5">
-                <motion.div
-                  className="w-1.5 h-1.5 rounded-full bg-primary"
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 1.8, repeat: Infinity }}
-                />
-                <span>SYSTEM ONLINE</span>
-              </div>
+
+            <div className="flex items-center gap-5">
+              {["Privacy Policy", "Terms of Service", "Cookie Policy", "Security"].map(l => (
+                <a key={l} href="#" className="hover:text-foreground transition-colors duration-200">{l}</a>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {[
+                { label: "GDPR", icon: BadgeCheck },
+                { label: "ISO 27001", icon: BadgeCheck },
+              ].map(({ label, icon: Icon }) => (
+                <div key={label} className="flex items-center gap-1 px-2 py-1 border border-border/50 rounded-sm">
+                  <Icon className="w-3 h-3 text-primary" />
+                  <span className="font-mono text-[10px]">{label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
