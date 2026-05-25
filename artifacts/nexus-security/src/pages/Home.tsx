@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Shield, Lock, Code, FileText, Activity, Terminal,
   ArrowRight, CheckCircle2, Copy, Check, Globe, Cpu, BarChart2,
-  AlertTriangle, Eye, Layers, ChevronRight
+  AlertTriangle, Eye, Layers, ChevronRight, Github, Linkedin, Twitter,
+  Zap, Target, Brain, FileSearch, BadgeCheck, Wifi
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
@@ -195,52 +196,34 @@ export default function Home() {
             <Terminal className="w-3.5 h-3.5" /> System Online
           </div>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight text-foreground brand-text">
-            AI-Powered <span className="text-primary glow-primary">Scan</span>
+            AI-Powered <span className="text-primary">Scan</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
             Detect security flaws before attackers do. Get detailed, actionable reports
             — trusted by developers, SMBs, and enterprises.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <motion.div
+            <motion.button
               whileHover="hover"
               whileTap={{ scale: 0.97 }}
-              className="relative cursor-pointer"
+              className="relative group cursor-pointer border border-primary/60 hover:border-primary bg-transparent text-primary font-bold text-base tracking-widest px-10 py-3.5 overflow-hidden transition-colors duration-300"
               onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" })}
             >
-              {/* Outer glow pulse */}
-              <motion.div
-                className="absolute -inset-1 rounded-sm bg-primary/40 blur-md pointer-events-none"
-                animate={{ opacity: [0.4, 0.7, 0.4] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              {/* Fill on hover */}
+              <motion.span
+                className="absolute inset-0 bg-primary pointer-events-none"
+                initial={{ scaleX: 0 }}
+                variants={{ hover: { scaleX: 1 } }}
+                style={{ originX: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
               />
-              {/* Hover glow boost */}
-              <motion.div
-                className="absolute -inset-1 rounded-sm bg-primary/60 blur-md pointer-events-none opacity-0"
-                variants={{ hover: { opacity: 1 } }}
-                transition={{ duration: 0.2 }}
-              />
-              <div
-                className="relative flex items-center gap-3 px-10 py-4 bg-primary text-black font-bold text-lg tracking-widest overflow-hidden"
-                style={{ clipPath: "polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)" }}
-              >
-                {/* Shimmer */}
-                <motion.div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)", translateX: "-100%" }}
-                  variants={{ hover: { translateX: "200%" } }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                />
-                <span className="relative z-10">Get Started</span>
-                <motion.span
-                  className="relative z-10"
-                  variants={{ hover: { x: 4 } }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ArrowRight className="w-5 h-5" />
+              <span className="relative z-10 flex items-center gap-2.5 group-hover:text-black transition-colors duration-300">
+                Get Started
+                <motion.span variants={{ hover: { x: 5 } }} transition={{ duration: 0.25 }}>
+                  <ArrowRight className="w-4 h-4" />
                 </motion.span>
-              </div>
-            </motion.div>
+              </span>
+            </motion.button>
           </div>
 
           {/* Stats row */}
@@ -306,7 +289,7 @@ export default function Home() {
             <p className="text-muted-foreground">Select the scan depth that fits your security needs.</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-3 gap-5 max-w-5xl mx-auto">
             {(["basic", "advanced", "protection"] as ScanRequestPlan[]).map(planKey => {
               const detail = PLAN_DETAILS[planKey];
               const Icon = detail.icon;
@@ -315,65 +298,64 @@ export default function Home() {
               const isPopular = planKey === "advanced";
 
               return (
-                <motion.div key={planKey} whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
-                  <Card className={`glass-panel border-2 h-full flex flex-col transition-all duration-300 relative
-                    ${isSelected ? "border-primary shadow-[0_0_32px_rgba(47,155,155,0.25)]" : isPopular ? "border-primary/40" : "border-border/50 hover:border-primary/30"}`}>
+                <motion.div key={planKey} whileHover={{ y: -3 }} transition={{ duration: 0.2 }} className="min-w-0">
+                  <Card className={`glass-panel border h-full flex flex-col transition-all duration-300 relative
+                    ${isSelected ? "border-primary" : isPopular ? "border-primary/40" : "border-border/50 hover:border-primary/30"}`}>
 
                     {isPopular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className="bg-primary text-primary-foreground text-xs font-bold px-4 py-1 rounded-full uppercase tracking-widest whitespace-nowrap">
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                        <span className="bg-primary text-primary-foreground text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-widest whitespace-nowrap">
                           Most Popular
                         </span>
                       </div>
                     )}
 
-                    <CardHeader className="pt-8 pb-4">
+                    <CardHeader className="pt-6 pb-3 px-5">
                       <div className="flex items-center justify-between mb-2">
-                        <Icon className="w-8 h-8 text-primary" />
-                        <span className={`text-xs font-mono px-2 py-0.5 rounded-full border ${detail.tagColor}`}>
+                        <Icon className="w-6 h-6 text-primary" />
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${detail.tagColor}`}>
                           {detail.tag}
                         </span>
                       </div>
-                      <CardTitle className="text-xl">{detail.name}</CardTitle>
-                      <CardDescription className="text-sm">{detail.description}</CardDescription>
-                      <div className="mt-4">
-                        <span className="text-4xl font-bold font-mono text-foreground">{price}</span>
-                        <span className="text-muted-foreground text-sm ml-2">
+                      <CardTitle className="text-base">{detail.name}</CardTitle>
+                      <CardDescription className="text-xs leading-relaxed">{detail.description}</CardDescription>
+                      <div className="mt-3">
+                        <span className="text-3xl font-bold font-mono text-foreground">{price}</span>
+                        <span className="text-muted-foreground text-xs ml-1.5">
                           {price === 0 ? "credits (Free)" : "credits"}
                         </span>
                       </div>
                     </CardHeader>
 
-                    <CardContent className="flex-1 flex flex-col gap-4">
-                      <ul className="space-y-2.5">
+                    <CardContent className="flex-1 flex flex-col gap-3 px-5 pb-5">
+                      <ul className="space-y-1.5">
                         {detail.features.map((f, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-sm">
-                            <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <li key={i} className="flex items-start gap-2 text-xs">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                             <span className={f.startsWith("Everything") ? "text-primary font-medium" : "text-muted-foreground"}>{f}</span>
                           </li>
                         ))}
                         {detail.notIncluded.map((f, i) => (
-                          <li key={`no-${i}`} className="flex items-start gap-2.5 text-sm opacity-40">
-                            <div className="w-4 h-4 shrink-0 mt-0.5 flex items-center justify-center">
-                              <div className="w-3 h-px bg-muted-foreground" />
+                          <li key={`no-${i}`} className="flex items-start gap-2 text-xs opacity-40">
+                            <div className="w-3.5 h-3.5 shrink-0 mt-0.5 flex items-center justify-center">
+                              <div className="w-2.5 h-px bg-muted-foreground" />
                             </div>
                             <span className="text-muted-foreground line-through">{f}</span>
                           </li>
                         ))}
                       </ul>
 
-                      <div className="mt-auto pt-6">
+                      <div className="mt-auto pt-4">
                         <Button
                           data-testid={`button-select-plan-${planKey}`}
                           onClick={() => handleSelectPlan(planKey)}
-                          className={`w-full transform -skew-x-6 font-bold tracking-widest ${isSelected
-                            ? "bg-primary text-primary-foreground glow-primary"
-                            : "bg-card border border-primary/50 text-primary hover:bg-primary/10"
+                          size="sm"
+                          className={`w-full font-bold tracking-widest text-xs ${isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-transparent border border-primary/50 text-primary hover:bg-primary/10"
                             }`}
                         >
-                          <div className="transform skew-x-6">
-                            {isSelected ? "SELECTED" : "SELECT PLAN"}
-                          </div>
+                          {isSelected ? "SELECTED" : "SELECT PLAN"}
                         </Button>
                       </div>
                     </CardContent>
@@ -765,49 +747,110 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-primary/20 bg-black">
-        {/* Main footer content */}
-        <div className="container mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <footer className="relative bg-[#050505] border-t border-primary/15 overflow-hidden">
+        {/* Cyber grid background */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{ backgroundImage: "linear-gradient(rgba(47,155,155,1) 1px, transparent 1px), linear-gradient(90deg, rgba(47,155,155,1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        {/* Top glow line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-            {/* Brand column */}
-            <div className="lg:col-span-1">
+        <div className="relative container mx-auto px-6 pt-16 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-14">
+
+            {/* ── COL 1: BRAND ── */}
+            <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <Shield className="w-6 h-6 text-primary" />
-                <span className="brand-text font-bold text-lg tracking-widest text-foreground">NEXUS SECURITY</span>
+                <div className="relative">
+                  <Shield className="w-7 h-7 text-primary" />
+                </div>
+                <span className="brand-text font-bold text-base tracking-widest text-foreground">NEXUS SECURITY</span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+              <p className="text-xs text-muted-foreground leading-relaxed mb-6">
                 AI-powered vulnerability scanning trusted by developers, SMBs, and enterprises worldwide.
               </p>
-              <div className="h-px bg-gradient-to-r from-primary/40 to-transparent w-20" />
-            </div>
-
-            {/* Payment Methods */}
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-5 font-mono">Payment Methods</h4>
-              {/* Card badges */}
-              <div className="flex flex-wrap gap-2 mb-5">
+              {/* Social icons */}
+              <div className="flex items-center gap-3 mb-8">
                 {[
-                  { label: "VISA", bg: "bg-[#1a1f71]", text: "text-white", italic: true },
-                  { label: "MC", bg: "bg-[#eb001b]", text: "text-white", sub: "●●" },
-                  { label: "AMEX", bg: "bg-[#2e77bc]", text: "text-white" },
-                  { label: "RuPay", bg: "bg-[#006400]", text: "text-white" },
-                ].map(({ label, bg, text, italic, sub }) => (
-                  <div key={label} className={`${bg} ${text} px-3 py-1.5 rounded text-xs font-bold tracking-wider flex items-center gap-1 min-w-[52px] justify-center`}>
-                    {italic ? <span className="italic">{label}</span> : <span>{label}</span>}
-                  </div>
-                ))}
-                {[
-                  { label: "UPI", color: "border-orange-400 text-orange-400" },
-                  { label: "Net Banking", color: "border-primary text-primary" },
-                  { label: "Wallets", color: "border-purple-400 text-purple-400" },
-                ].map(({ label, color }) => (
-                  <div key={label} className={`border ${color} px-2.5 py-1 rounded text-xs font-medium`}>{label}</div>
+                  { icon: Github, label: "GitHub" },
+                  { icon: Linkedin, label: "LinkedIn" },
+                  { icon: Twitter, label: "Twitter" },
+                ].map(({ icon: Icon, label }) => (
+                  <a key={label} href="#" aria-label={label}
+                    className="w-8 h-8 border border-border/60 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/60 transition-all duration-200 group"
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </a>
                 ))}
               </div>
-              {/* Accepted Currencies */}
-              <h5 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 font-mono">Accepted Currencies</h5>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+              {/* Compliance badges */}
+              <div className="flex flex-wrap gap-2">
+                {["GDPR", "SOC 2", "ISO 27001"].map(b => (
+                  <div key={b} className="flex items-center gap-1 px-2 py-1 border border-primary/20 bg-primary/5 rounded-sm">
+                    <BadgeCheck className="w-3 h-3 text-primary" />
+                    <span className="text-[10px] font-mono text-primary/80 tracking-wide">{b}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── COL 2: SECURITY FEATURES ── */}
+            <div>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-5 font-mono">Security Features</h4>
+              <div className="space-y-2.5">
+                {[
+                  { icon: Target, label: "Reconnaissance" },
+                  { icon: Brain, label: "AI Vulnerability Detection" },
+                  { icon: FileSearch, label: "Smart Reporting" },
+                  { icon: Zap, label: "Threat Intelligence" },
+                  { icon: Wifi, label: "Real-time Monitoring" },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label}
+                    className="flex items-center gap-3 p-2.5 border border-border/30 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 group cursor-default"
+                  >
+                    <div className="w-6 h-6 border border-primary/30 group-hover:border-primary/60 flex items-center justify-center shrink-0 transition-colors duration-200">
+                      <Icon className="w-3 h-3 text-primary" />
+                    </div>
+                    <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors duration-200">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── COL 3: TRUST & PAYMENT ── */}
+            <div>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-5 font-mono">Trust & Payment</h4>
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-2 mb-5">
+                {[
+                  { val: "95%", label: "Accuracy" },
+                  { val: "24h", label: "Delivery" },
+                  { val: "OWASP", label: "Top 10" },
+                  { val: "SLA", label: "12h Support" },
+                ].map(({ val, label }) => (
+                  <div key={label} className="border border-border/30 p-2 text-center">
+                    <div className="text-sm font-bold text-primary font-mono">{val}</div>
+                    <div className="text-[10px] text-muted-foreground">{label}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Payment methods */}
+              <h5 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 font-mono">Payment Methods</h5>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {[
+                  { label: "VISA", bg: "bg-[#1a1f71]" },
+                  { label: "MC", bg: "bg-[#b92d2d]" },
+                  { label: "AMEX", bg: "bg-[#2e77bc]" },
+                  { label: "RuPay", bg: "bg-[#1a6e2e]" },
+                ].map(({ label, bg }) => (
+                  <div key={label} className={`${bg} text-white px-2.5 py-1 text-[10px] font-bold tracking-wider`}>{label}</div>
+                ))}
+                {["UPI", "Net Banking"].map(l => (
+                  <div key={l} className="border border-primary/30 text-primary px-2 py-1 text-[10px] font-medium">{l}</div>
+                ))}
+              </div>
+              {/* Currencies */}
+              <h5 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 font-mono">Currencies</h5>
+              <div className="grid grid-cols-5 gap-x-2 gap-y-1">
                 {[
                   { flag: "🇺🇸", code: "USD" }, { flag: "🇪🇺", code: "EUR" },
                   { flag: "🇬🇧", code: "GBP" }, { flag: "🇮🇳", code: "INR" },
@@ -815,67 +858,69 @@ export default function Home() {
                   { flag: "🇸🇬", code: "SGD" }, { flag: "🇦🇪", code: "AED" },
                   { flag: "🇯🇵", code: "JPY" }, { flag: "🇨🇳", code: "CNY" },
                 ].map(({ flag, code }) => (
-                  <div key={code} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="text-sm">{flag}</span>
-                    <span className="font-mono">{code}</span>
+                  <div key={code} className="flex flex-col items-center text-center">
+                    <span className="text-sm leading-none">{flag}</span>
+                    <span className="text-[9px] font-mono text-muted-foreground mt-0.5">{code}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Pricing / Plans */}
+            {/* ── COL 4: QUICK LINKS & PLANS ── */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-5 font-mono">Plans</h4>
-              <div className="space-y-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-5 font-mono">Quick Links</h4>
+              <ul className="space-y-2 mb-8">
                 {[
-                  { name: "Basic", price: "0 CRD", tag: "Free" },
-                  { name: "Advanced", price: "10 CRD", tag: "Popular" },
-                  { name: "Protection+", price: "25 CRD", tag: "Enterprise" },
-                ].map(({ name, price, tag }) => (
-                  <div key={name} className="flex items-center justify-between py-2 border-b border-border/30">
-                    <div>
-                      <span className="text-sm text-foreground font-medium">{name}</span>
-                      <span className="ml-2 text-xs text-muted-foreground px-1.5 py-0.5 border border-border/50 rounded-sm">{tag}</span>
-                    </div>
-                    <span className="text-primary font-mono text-sm font-bold">{price}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-5 font-mono">Quick Links</h4>
-              <ul className="space-y-3">
-                {[
-                  { label: "Terms of Service", href: "#" },
-                  { label: "Privacy Policy", href: "#" },
-                  { label: "Refund Policy", href: "#" },
                   { label: "About Us", href: "#" },
-                  { label: "Contact", href: "#" },
                   { label: "Pricing", href: "#plans" },
+                  { label: "API Access", href: "#" },
+                  { label: "Contact", href: "#" },
+                  { label: "Privacy Policy", href: "#" },
+                  { label: "Terms of Service", href: "#" },
+                  { label: "Refund Policy", href: "#" },
                 ].map(({ label, href }) => (
                   <li key={label}>
-                    <a href={href} className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5 group">
-                      <ChevronRight className="w-3 h-3 text-primary/40 group-hover:text-primary transition-colors" />
+                    <a href={href} className="text-xs text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5 group">
+                      <ChevronRight className="w-2.5 h-2.5 text-primary/30 group-hover:text-primary transition-colors" />
                       {label}
                     </a>
                   </li>
                 ))}
               </ul>
+
+              {/* Plans summary */}
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-3 font-mono">Plans</h4>
+              <div className="space-y-1.5">
+                {[
+                  { name: "Basic", price: "Free", color: "text-slate-400" },
+                  { name: "Advanced", price: "10 CRD", color: "text-primary" },
+                  { name: "Protection+", price: "25 CRD", color: "text-amber-400" },
+                ].map(({ name, price, color }) => (
+                  <div key={name} className="flex items-center justify-between py-1 border-b border-border/20">
+                    <span className="text-xs text-muted-foreground">{name}</span>
+                    <span className={`text-xs font-mono font-bold ${color}`}>{price}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Bottom bar */}
-        <div className="border-t border-border/30">
-          <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
-              &copy; 2026 Nexus Security. All rights reserved.
-            </p>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Systems Operational
+          {/* Separator */}
+          <div className="h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent mb-6" />
+
+          {/* Bottom bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted-foreground">
+            <p>&copy; 2026 Nexus Security. All rights reserved.</p>
+            <div className="flex items-center gap-4">
+              <span className="text-primary/50 font-mono">Powered by Nexus AI</span>
+              <div className="flex items-center gap-1.5">
+                <motion.div
+                  className="w-1.5 h-1.5 rounded-full bg-primary"
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1.8, repeat: Infinity }}
+                />
+                <span>SYSTEM ONLINE</span>
+              </div>
             </div>
           </div>
         </div>

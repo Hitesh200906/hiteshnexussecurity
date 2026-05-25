@@ -60,29 +60,18 @@ export function Navbar() {
                 whileHover="hover"
                 whileTap={{ scale: 0.97 }}
               >
-                {/* Outer glow ring */}
-                <motion.div
-                  className="absolute -inset-0.5 rounded-sm bg-gradient-to-r from-primary/50 via-primary to-primary/50 opacity-0 blur-sm pointer-events-none"
-                  variants={{ hover: { opacity: 1 } }}
-                  transition={{ duration: 0.2 }}
-                />
-
                 {/* Button body */}
                 <div
                   className="relative flex items-center gap-2.5 px-5 py-2.5 bg-primary/10 border border-primary text-primary-foreground font-bold text-sm tracking-widest overflow-hidden select-none"
                   style={{ clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)" }}
                 >
-                  {/* Shimmer — behind text, pointer-events-none */}
+                  {/* Shimmer */}
                   <motion.div
                     className="absolute inset-0 pointer-events-none"
                     style={{ background: "linear-gradient(90deg, transparent 0%, rgba(47,155,155,0.25) 50%, transparent 100%)", translateX: "-100%" }}
                     variants={{ hover: { translateX: "200%" } }}
                     transition={{ duration: 0.55, ease: "easeInOut" }}
                   />
-
-                  {/* Corner accents */}
-                  <span className="absolute top-0 left-2 w-2 h-0.5 bg-primary pointer-events-none" />
-                  <span className="absolute bottom-0 right-2 w-2 h-0.5 bg-primary pointer-events-none" />
 
                   {/* Pulsing dot */}
                   <motion.span
@@ -91,7 +80,6 @@ export function Navbar() {
                     transition={{ duration: 1.4, repeat: Infinity }}
                   />
 
-                  {/* Text — always visible, full contrast */}
                   <span className="relative z-10 text-foreground font-bold tracking-widest">ACCESS SYSTEM</span>
                 </div>
               </motion.div>

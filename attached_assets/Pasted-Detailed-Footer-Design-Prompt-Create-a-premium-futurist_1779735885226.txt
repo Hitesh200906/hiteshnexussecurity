@@ -1,0 +1,124 @@
+Detailed Footer Design Prompt
+
+Create a premium futuristic cybersecurity website footer for “NEXUS SECURITY” with a sleek black and dark charcoal background, glowing neon cyan accents, soft gradients, glassmorphism panels, animated grid lines, and modern enterprise UI styling.
+
+The footer should feel like a mix of:
+
+Tesla website minimalism
+Apple clean spacing
+Cyberpunk security dashboard aesthetics
+AI-powered SaaS landing page
+Layout Structure
+
+Use a 4-column responsive layout with glowing separators and subtle hover animations.
+
+LEFT SECTION — BRANDING
+
+Include:
+
+Nexus Security logo with cyan glow
+Tagline:
+“AI-powered vulnerability scanning trusted by developers worldwide.”
+Small animated globe/network visualization behind the text
+Social media icons with glowing hover effects:
+GitHub
+Discord
+LinkedIn
+X/Twitter
+Add a floating shield hologram illustration beside the branding
+
+Style:
+
+Minimal typography
+Cyan + white color palette
+Subtle particle animations
+SECOND SECTION — SECURITY FEATURES
+
+Create modern feature cards with icons:
+
+Reconnaissance
+AI Vulnerability Detection
+Smart Reporting
+Threat Intelligence
+
+Each card should include:
+
+Neon outline
+Small futuristic icon
+Hover glow animation
+
+Add background elements:
+
+Floating code snippets
+Scanning radar circles
+Cyber grid patterns
+THIRD SECTION — TRUST & STATS
+
+Add visual trust elements:
+
+“99.9% Detection Accuracy”
+“24h Report Delivery”
+“OWASP Top 10 Coverage”
+“Enterprise Ready”
+
+Use:
+
+Circular progress indicators
+Animated stat counters
+Small world map with glowing attack nodes
+
+Include:
+
+Payment icons
+Accepted currencies
+Security compliance badges:
+GDPR
+SOC 2
+ISO 27001
+FOURTH SECTION — QUICK LINKS
+
+Add:
+
+About
+Pricing
+Documentation
+API Access
+Contact
+Privacy Policy
+Terms
+
+Use:
+
+Minimal glowing arrows
+Hover underline animations
+Glassmorphism link containers
+BOTTOM BAR
+
+Add:
+
+Copyright text
+“Powered by Nexus AI”
+Live system status indicator:
+“● SYSTEM ONLINE”
+Tiny animated network pulse line
+Visual Style
+Dark black background (#050505)
+Cyan neon glow (#00E5FF)
+Subtle gradients
+Soft shadows
+Rounded glass cards
+Thin borders
+Smooth animations
+High-end SaaS aesthetic
+Extra Effects
+
+Include:
+
+Floating particles
+Animated cyber lines
+Subtle scanning beam
+Interactive hover glows
+Digital matrix texture
+Minimal 3D depth
+
+The footer must look premium, futuristic, clean, and enterprise-grade — suitable for an AI cybersecurity platform worth millions.
