@@ -14,10 +14,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import recon from "@assets/ChatGPT_Image_May_25,_2026,_11_34_31_PM_1779732307832.png";
-import crawl from "@assets/ChatGPT_Image_May_25,_2026,_11_37_10_PM_1779732453665.png";
-import detection from "@assets/ChatGPT_Image_May_25,_2026,_11_39_03_PM_1779732558834.png";
-import reporting from "@assets/ChatGPT_Image_May_25,_2026,_11_41_25_PM_1779732724342.png";
+import recon from "@assets/ChatGPT_Image_May_25,_2026,_11_47_50_PM_1779733105196.png";
+import crawl from "@assets/ChatGPT_Image_May_25,_2026,_11_50_39_PM_1779733273375.png";
+import detection from "@assets/ChatGPT_Image_May_25,_2026,_11_53_49_PM_1779733438254.png";
+import reporting from "@assets/ChatGPT_Image_May_25,_2026,_11_55_56_PM_1779733563869.png";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScanRequestPlan, ScanRequestVerificationMethod, PlanPrices } from "@workspace/api-client-react";
 import type { LucideIcon } from "lucide-react";
@@ -126,7 +126,6 @@ export default function Home() {
     setSelectedPlan(plan);
     setVerificationMethod(null);
     setScanState({ status: "idle" });
-    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -203,18 +202,51 @@ export default function Home() {
             — trusted by developers, SMBs, and enterprises.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Button size="lg" className="h-14 px-10 transform -skew-x-12 bg-primary text-primary-foreground hover:bg-primary/90 glow-primary"
-              onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" })}>
-              <div className="transform skew-x-12 font-bold tracking-wider flex items-center gap-2">
-                Get Started <ArrowRight className="w-5 h-5" />
+            <motion.div
+              whileHover="hover"
+              whileTap={{ scale: 0.97 }}
+              className="relative cursor-pointer"
+              onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              {/* Outer glow pulse */}
+              <motion.div
+                className="absolute -inset-1 rounded-sm bg-primary/40 blur-md pointer-events-none"
+                animate={{ opacity: [0.4, 0.7, 0.4] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              />
+              {/* Hover glow boost */}
+              <motion.div
+                className="absolute -inset-1 rounded-sm bg-primary/60 blur-md pointer-events-none opacity-0"
+                variants={{ hover: { opacity: 1 } }}
+                transition={{ duration: 0.2 }}
+              />
+              <div
+                className="relative flex items-center gap-3 px-10 py-4 bg-primary text-black font-bold text-lg tracking-widest overflow-hidden"
+                style={{ clipPath: "polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)" }}
+              >
+                {/* Shimmer */}
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)", translateX: "-100%" }}
+                  variants={{ hover: { translateX: "200%" } }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                />
+                <span className="relative z-10">Get Started</span>
+                <motion.span
+                  className="relative z-10"
+                  variants={{ hover: { x: 4 } }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </motion.span>
               </div>
-            </Button>
+            </motion.div>
           </div>
 
           {/* Stats row */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 text-center">
             {[
-              { label: "Accuracy", value: "99%" },
+              { label: "Accuracy", value: "95%" },
               { label: "Report Delivery", value: "24h" },
               { label: "Profile Dashboard", value: "Included" },
             ].map(s => (
@@ -714,23 +746,16 @@ export default function Home() {
                 {/* Image side */}
                 <motion.div
                   className={`relative ${reverse ? "lg:[direction:ltr]" : ""}`}
-                  whileHover={{ scale: 1.01 }}
-                  transition={{ duration: 0.3 }}
+                  whileHover={{ scale: 1.04 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
                 >
-                  {/* Glow behind image */}
-                  <div className="absolute -inset-4 bg-primary/8 rounded-2xl blur-2xl" />
-                  <div className="relative rounded-xl overflow-hidden border border-primary/20 shadow-[0_0_40px_rgba(47,155,155,0.12)]">
+                  <div className="rounded-xl overflow-hidden border border-primary/20">
                     <img
                       src={img}
                       alt={tag}
                       className="w-full h-auto block"
                       loading="lazy"
                     />
-                    {/* Subtle overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                    {/* Corner accent */}
-                    <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-primary/60" />
-                    <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-primary/60" />
                   </div>
                 </motion.div>
               </motion.div>
@@ -740,12 +765,119 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-border bg-black py-14 text-center text-muted-foreground">
-        <div className="container mx-auto px-4">
-          <Shield className="w-8 h-8 text-primary mx-auto mb-5" />
-          <p className="brand-text font-bold text-foreground text-lg mb-2 tracking-widest">NEXUS SECURITY</p>
-          <p className="text-sm mb-6">Protecting your digital assets.</p>
-          <p className="text-xs">&copy; 2026 Nexus Security. All rights reserved. | Protecting your digital assets.</p>
+      <footer className="border-t border-primary/20 bg-black">
+        {/* Main footer content */}
+        <div className="container mx-auto px-4 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+
+            {/* Brand column */}
+            <div className="lg:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <Shield className="w-6 h-6 text-primary" />
+                <span className="brand-text font-bold text-lg tracking-widest text-foreground">NEXUS SECURITY</span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                AI-powered vulnerability scanning trusted by developers, SMBs, and enterprises worldwide.
+              </p>
+              <div className="h-px bg-gradient-to-r from-primary/40 to-transparent w-20" />
+            </div>
+
+            {/* Payment Methods */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-5 font-mono">Payment Methods</h4>
+              {/* Card badges */}
+              <div className="flex flex-wrap gap-2 mb-5">
+                {[
+                  { label: "VISA", bg: "bg-[#1a1f71]", text: "text-white", italic: true },
+                  { label: "MC", bg: "bg-[#eb001b]", text: "text-white", sub: "●●" },
+                  { label: "AMEX", bg: "bg-[#2e77bc]", text: "text-white" },
+                  { label: "RuPay", bg: "bg-[#006400]", text: "text-white" },
+                ].map(({ label, bg, text, italic, sub }) => (
+                  <div key={label} className={`${bg} ${text} px-3 py-1.5 rounded text-xs font-bold tracking-wider flex items-center gap-1 min-w-[52px] justify-center`}>
+                    {italic ? <span className="italic">{label}</span> : <span>{label}</span>}
+                  </div>
+                ))}
+                {[
+                  { label: "UPI", color: "border-orange-400 text-orange-400" },
+                  { label: "Net Banking", color: "border-primary text-primary" },
+                  { label: "Wallets", color: "border-purple-400 text-purple-400" },
+                ].map(({ label, color }) => (
+                  <div key={label} className={`border ${color} px-2.5 py-1 rounded text-xs font-medium`}>{label}</div>
+                ))}
+              </div>
+              {/* Accepted Currencies */}
+              <h5 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 font-mono">Accepted Currencies</h5>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {[
+                  { flag: "🇺🇸", code: "USD" }, { flag: "🇪🇺", code: "EUR" },
+                  { flag: "🇬🇧", code: "GBP" }, { flag: "🇮🇳", code: "INR" },
+                  { flag: "🇨🇦", code: "CAD" }, { flag: "🇦🇺", code: "AUD" },
+                  { flag: "🇸🇬", code: "SGD" }, { flag: "🇦🇪", code: "AED" },
+                  { flag: "🇯🇵", code: "JPY" }, { flag: "🇨🇳", code: "CNY" },
+                ].map(({ flag, code }) => (
+                  <div key={code} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="text-sm">{flag}</span>
+                    <span className="font-mono">{code}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pricing / Plans */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-5 font-mono">Plans</h4>
+              <div className="space-y-3">
+                {[
+                  { name: "Basic", price: "0 CRD", tag: "Free" },
+                  { name: "Advanced", price: "10 CRD", tag: "Popular" },
+                  { name: "Protection+", price: "25 CRD", tag: "Enterprise" },
+                ].map(({ name, price, tag }) => (
+                  <div key={name} className="flex items-center justify-between py-2 border-b border-border/30">
+                    <div>
+                      <span className="text-sm text-foreground font-medium">{name}</span>
+                      <span className="ml-2 text-xs text-muted-foreground px-1.5 py-0.5 border border-border/50 rounded-sm">{tag}</span>
+                    </div>
+                    <span className="text-primary font-mono text-sm font-bold">{price}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-5 font-mono">Quick Links</h4>
+              <ul className="space-y-3">
+                {[
+                  { label: "Terms of Service", href: "#" },
+                  { label: "Privacy Policy", href: "#" },
+                  { label: "Refund Policy", href: "#" },
+                  { label: "About Us", href: "#" },
+                  { label: "Contact", href: "#" },
+                  { label: "Pricing", href: "#plans" },
+                ].map(({ label, href }) => (
+                  <li key={label}>
+                    <a href={href} className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5 group">
+                      <ChevronRight className="w-3 h-3 text-primary/40 group-hover:text-primary transition-colors" />
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="border-t border-border/30">
+          <div className="container mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              &copy; 2026 Nexus Security. All rights reserved.
+            </p>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              Systems Operational
+            </div>
+          </div>
         </div>
       </footer>
     </div>

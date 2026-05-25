@@ -1,6 +1,5 @@
 import { Link, useLocation } from "wouter";
 import { useGetStatus, useAdminCheck, useLogout } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
 import { Shield, LogOut, LayoutDashboard, Settings } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -25,9 +24,6 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="relative">
             <Shield className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110" />
-            <div className="absolute inset-0 w-6 h-6 text-primary blur-sm opacity-0 group-hover:opacity-60 transition-opacity duration-300">
-              <Shield className="w-6 h-6" />
-            </div>
           </div>
           <span className="brand-text font-bold text-xl tracking-widest text-foreground group-hover:text-primary transition-colors duration-300">
             NEXUS SECURITY
@@ -35,8 +31,8 @@ export function Navbar() {
         </Link>
 
         {/* Nav links */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="text-base font-semibold text-foreground hover:text-primary transition-colors duration-200 tracking-wide">
             Home
           </Link>
 
@@ -50,78 +46,54 @@ export function Navbar() {
                   <Settings className="w-3.5 h-3.5" /> Admin
                 </Link>
               )}
-              <Button
-                variant="outline"
+              <button
                 onClick={handleLogout}
-                className="h-9 px-4 border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 flex items-center gap-2 text-sm"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 px-4 py-2 rounded-sm"
               >
                 <LogOut className="w-3.5 h-3.5" /> Log Out
-              </Button>
+              </button>
             </>
           ) : (
             <Link href="/login">
               <motion.div
                 className="relative group cursor-pointer"
                 whileHover="hover"
-                whileTap="tap"
+                whileTap={{ scale: 0.97 }}
               >
                 {/* Outer glow ring */}
                 <motion.div
-                  className="absolute -inset-0.5 rounded-sm bg-gradient-to-r from-primary/60 via-primary to-primary/60 opacity-0 blur-sm"
-                  variants={{ hover: { opacity: 1 }, tap: { opacity: 0.8 } }}
+                  className="absolute -inset-0.5 rounded-sm bg-gradient-to-r from-primary/50 via-primary to-primary/50 opacity-0 blur-sm pointer-events-none"
+                  variants={{ hover: { opacity: 1 } }}
                   transition={{ duration: 0.2 }}
                 />
 
                 {/* Button body */}
-                <motion.div
-                  className="relative flex items-center gap-2 px-5 py-2.5 bg-black border border-primary/70 text-primary font-bold text-sm tracking-widest overflow-hidden"
+                <div
+                  className="relative flex items-center gap-2.5 px-5 py-2.5 bg-primary/10 border border-primary text-primary-foreground font-bold text-sm tracking-widest overflow-hidden select-none"
                   style={{ clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)" }}
-                  variants={{
-                    hover: { borderColor: "rgba(47,155,155,1)", backgroundColor: "rgba(47,155,155,0.08)" },
-                    tap: { scale: 0.97 },
-                  }}
-                  transition={{ duration: 0.15 }}
                 >
-                  {/* Shimmer sweep */}
+                  {/* Shimmer — behind text, pointer-events-none */}
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent -translate-x-full"
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ background: "linear-gradient(90deg, transparent 0%, rgba(47,155,155,0.25) 50%, transparent 100%)", translateX: "-100%" }}
                     variants={{ hover: { translateX: "200%" } }}
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                  />
-
-                  {/* Scanning line */}
-                  <motion.div
-                    className="absolute left-0 top-0 h-full w-0.5 bg-primary/70"
-                    initial={{ scaleY: 0, opacity: 0 }}
-                    variants={{
-                      hover: { scaleY: [0, 1, 1, 0], opacity: [0, 1, 1, 0], x: [0, 0, 200, 200] },
-                    }}
-                    transition={{ duration: 0.5, ease: "linear" }}
+                    transition={{ duration: 0.55, ease: "easeInOut" }}
                   />
 
                   {/* Corner accents */}
-                  <div className="absolute top-0 left-2 w-2 h-0.5 bg-primary" />
-                  <div className="absolute bottom-0 right-2 w-2 h-0.5 bg-primary" />
+                  <span className="absolute top-0 left-2 w-2 h-0.5 bg-primary pointer-events-none" />
+                  <span className="absolute bottom-0 right-2 w-2 h-0.5 bg-primary pointer-events-none" />
 
                   {/* Pulsing dot */}
-                  <motion.div
-                    className="w-1.5 h-1.5 rounded-full bg-primary"
+                  <motion.span
+                    className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 pointer-events-none"
                     animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 1.4, repeat: Infinity }}
                   />
 
-                  <span className="relative z-10">ACCESS SYSTEM</span>
-
-                  {/* Right arrow that slides in on hover */}
-                  <motion.span
-                    className="relative z-10 text-primary"
-                    initial={{ opacity: 0, x: -6 }}
-                    variants={{ hover: { opacity: 1, x: 0 } }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    _
-                  </motion.span>
-                </motion.div>
+                  {/* Text — always visible, full contrast */}
+                  <span className="relative z-10 text-foreground font-bold tracking-widest">ACCESS SYSTEM</span>
+                </div>
               </motion.div>
             </Link>
           )}
