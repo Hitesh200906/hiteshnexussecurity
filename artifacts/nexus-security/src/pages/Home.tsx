@@ -6,14 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Shield, Zap, Lock, Code, FileText, Activity, Terminal,
+  Shield, Lock, Code, FileText, Activity, Terminal,
   ArrowRight, CheckCircle2, Copy, Check, Globe, Cpu, BarChart2,
-  AlertTriangle, Eye, Server, Layers, Clock, Star, ChevronRight
+  AlertTriangle, Eye, Layers, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import recon from "@assets/ChatGPT_Image_May_25,_2026,_11_34_31_PM_1779732307832.png";
+import crawl from "@assets/ChatGPT_Image_May_25,_2026,_11_37_10_PM_1779732453665.png";
+import detection from "@assets/ChatGPT_Image_May_25,_2026,_11_39_03_PM_1779732558834.png";
+import reporting from "@assets/ChatGPT_Image_May_25,_2026,_11_41_25_PM_1779732724342.png";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScanRequestPlan, ScanRequestVerificationMethod, PlanPrices } from "@workspace/api-client-react";
 import type { LucideIcon } from "lucide-react";
@@ -45,19 +49,14 @@ const PLAN_DETAILS: Record<ScanRequestPlan, PlanDetail> = {
     icon: Activity,
     description: "Ideal for quick checks and first-time users.",
     features: [
-      "Surface-level vulnerability scan of first 2–3 pages",
+      "Surface-level scan of first 2–3 pages",
       "Open port detection and service fingerprinting",
-      "Exposed sensitive files and directories check",
       "Missing security headers analysis (CSP, HSTS, X-Frame)",
       "Basic SSL/TLS certificate validation",
-      "Scan delivered via email report",
-      "Results within 24 hours",
     ],
     notIncluded: [
-      "Deep crawl beyond first pages",
-      "OWASP Top 10 full coverage",
+      "Deep crawl and OWASP Top 10",
       "Critical CVE detection",
-      "Compliance mapping",
     ],
   },
   advanced: {
@@ -70,13 +69,9 @@ const PLAN_DETAILS: Record<ScanRequestPlan, PlanDetail> = {
       "Complete website crawl — every page and endpoint",
       "Full OWASP Top 10 coverage including injection flaws",
       "XSS, CSRF, SSRF, and open redirect detection",
-      "Authentication and session management testing",
       "API endpoint discovery and fuzzing",
-      "Medium and low severity vulnerability classification",
-      "Developer-friendly remediation guide per finding",
       "Severity-sorted HTML report with CVSS scores",
-      "Priority fix roadmap with estimated effort",
-      "Delivered to profile dashboard + downloadable",
+      "Developer-friendly remediation guide per finding",
     ],
     notIncluded: [
       "Critical/zero-day CVE scanning",
@@ -91,16 +86,13 @@ const PLAN_DETAILS: Record<ScanRequestPlan, PlanDetail> = {
     description: "Maximum depth. Critical vulnerabilities and compliance.",
     features: [
       "Everything in Advanced, plus:",
-      "Deep scan of entire site — all subdomains and APIs",
-      "Critical vulnerability detection including SQL injection, RCE, LFI",
-      "Zero-day threat intelligence cross-referencing (CVE database)",
-      "Business logic vulnerability analysis",
-      "Authentication bypass and privilege escalation testing",
+      "Deep scan — all subdomains and APIs",
+      "Critical CVEs: SQL injection, RCE, LFI detection",
+      "Zero-day threat intelligence (CVE database)",
       "Sensitive data exposure and PII leak detection",
       "Compliance mapping: PCI-DSS, HIPAA, ISO 27001, GDPR",
-      "Executive summary + technical report (separate documents)",
+      "Executive summary + technical report",
       "Vulnerability timeline and risk scoring",
-      "Re-scan discount after fixes applied",
       "Priority support with 12-hour response SLA",
     ],
     notIncluded: [],
@@ -652,46 +644,96 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="py-24 bg-card/30 border-t border-border">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold brand-text mb-4">How Our AI Works</h2>
-          <p className="text-muted-foreground mb-14 max-w-xl mx-auto">
-            A four-phase methodology that mirrors a real penetration test — automated, accurate, and safe.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-0 max-w-5xl mx-auto">
+      <section className="relative py-28 overflow-hidden">
+        {/* Unique layered background */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(47,155,155,0.07)_0%,transparent_70%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(47,155,155,0.04)_50%,transparent_100%)]" />
+        <div className="absolute inset-0"
+          style={{ backgroundImage: "radial-gradient(rgba(47,155,155,0.08) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
+        <div className="container mx-auto px-4 relative z-10">
+          {/* Header */}
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary mb-6 text-xs font-mono tracking-widest uppercase">
+              <Terminal className="w-3.5 h-3.5" /> Methodology
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold brand-text mb-4">How Our AI Works</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-lg leading-relaxed">
+              A four-phase methodology that mirrors a real penetration test — automated, accurate, and relentless.
+            </p>
+          </div>
+
+          {/* Phases */}
+          <div className="space-y-28">
             {[
               {
-                n: "01", icon: Globe, title: "Reconnaissance",
-                desc: "Maps the full attack surface: subdomains, open ports, tech stack fingerprinting, and exposed admin panels.",
+                n: "01", tag: "RECONNAISSANCE", img: recon,
+                title: <>Mapping the full <span className="text-primary">attack surface</span></>,
+                desc: "We map every exposed entry point across your digital footprint — from subdomains and open ports to tech stack fingerprinting and hidden admin panels.",
+                reverse: false,
               },
               {
-                n: "02", icon: Layers, title: "Page-by-Page Crawl",
-                desc: "Deep crawl of all endpoints, forms, API routes, and JavaScript-rendered pages to catch hidden vulnerabilities.",
+                n: "02", tag: "PAGE-BY-PAGE CRAWL", img: crawl,
+                title: <>Deep crawl. <span className="text-primary">No page left behind.</span></>,
+                desc: "We crawl every endpoint, form, API route, and JavaScript-rendered page to uncover hidden vulnerabilities others miss.",
+                reverse: true,
               },
               {
-                n: "03", icon: AlertTriangle, title: "Vulnerability Detection",
-                desc: "Tests each vector using AI-driven payloads. Covers OWASP Top 10, CVE database, and proprietary threat signatures.",
+                n: "03", tag: "VULNERABILITY DETECTION", img: detection,
+                title: <>AI-driven tests. <span className="text-primary">Real threats.</span></>,
+                desc: "We test every attack vector using AI-driven payloads and validate against OWASP Top 10, CVE database, and proprietary threat signatures.",
+                reverse: false,
               },
               {
-                n: "04", icon: BarChart2, title: "Smart Reporting",
-                desc: "CVSS-scored findings, severity tiers, line-by-line remediation steps, and a fix roadmap ordered by risk.",
+                n: "04", tag: "SMART REPORTING", img: reporting,
+                title: <>Clear findings. <span className="text-primary">Actionable fixes.</span></>,
+                desc: "CVSS-scored findings, severity tiers, line-by-line remediation steps, and a fix roadmap ordered by risk impact.",
+                reverse: true,
               },
-            ].map(({ n, icon: Icon, title, desc }, i, arr) => (
-              <div key={n} className="flex items-stretch">
-                <div className="p-6 flex-1">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4 text-primary font-bold font-mono text-sm">
-                    {n}
+            ].map(({ n, tag, img, title, desc, reverse }, i) => (
+              <motion.div
+                key={n}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className={`grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center ${reverse ? "lg:[direction:rtl]" : ""}`}
+              >
+                {/* Text side */}
+                <div className={`${reverse ? "lg:[direction:ltr]" : ""}`}>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary mb-5 text-xs font-mono tracking-widest">
+                    <span className="text-primary/50">{n}</span> {tag}
                   </div>
-                  <Icon className="w-5 h-5 text-primary mx-auto mb-3" />
-                  <h4 className="font-bold mb-2">{title}</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                  <h3 className="text-3xl md:text-4xl font-bold leading-tight mb-5">{title}</h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed mb-6">{desc}</p>
+                  <div className="h-px bg-gradient-to-r from-primary/40 to-transparent w-24" />
                 </div>
-                {i < arr.length - 1 && (
-                  <div className="hidden md:flex items-center justify-center w-8 shrink-0">
-                    <ChevronRight className="w-5 h-5 text-primary/40" />
+
+                {/* Image side */}
+                <motion.div
+                  className={`relative ${reverse ? "lg:[direction:ltr]" : ""}`}
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {/* Glow behind image */}
+                  <div className="absolute -inset-4 bg-primary/8 rounded-2xl blur-2xl" />
+                  <div className="relative rounded-xl overflow-hidden border border-primary/20 shadow-[0_0_40px_rgba(47,155,155,0.12)]">
+                    <img
+                      src={img}
+                      alt={tag}
+                      className="w-full h-auto block"
+                      loading="lazy"
+                    />
+                    {/* Subtle overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                    {/* Corner accent */}
+                    <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-primary/60" />
+                    <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-primary/60" />
                   </div>
-                )}
-              </div>
+                </motion.div>
+              </motion.div>
             ))}
           </div>
         </div>
