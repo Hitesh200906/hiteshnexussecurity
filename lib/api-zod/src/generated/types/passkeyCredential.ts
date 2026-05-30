@@ -6,8 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdminAccess {
-  isAdmin: boolean;
-  adminPanelVerified: boolean;
-  hasPasskey: boolean;
+export interface PasskeyCredential {
+  credentialId: string;
 }

@@ -401,6 +401,93 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /admin/passkey/register-options:
+    get:
+      operationId: getPasskeyRegisterOptions
+      tags: [admin]
+      summary: Get WebAuthn registration options (challenge)
+      responses:
+        "200":
+          description: Registration options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasskeyOptions"
+        "401":
+          description: Unauthorized
+
+  /admin/passkey/register-verify:
+    post:
+      operationId: verifyPasskeyRegistration
+      tags: [admin]
+      summary: Verify WebAuthn registration and store credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasskeyCredential"
+      responses:
+        "200":
+          description: Passkey registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/passkey/auth-verify:
+    post:
+      operationId: verifyPasskeyAuth
+      tags: [admin]
+      summary: Verify WebAuthn authentication and grant admin session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasskeyCredential"
+      responses:
+        "200":
+          description: Admin session granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/passkey:
+    delete:
+      operationId: removePasskey
+      tags: [admin]
+      summary: Remove the current user's passkey
+      responses:
+        "200":
+          description: Passkey removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/team-members:
+    post:
+      operationId: addTeamMember
+      tags: [admin]
+      summary: Grant admin access to a user by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamMemberInput"
+      responses:
+        "200":
+          description: Admin access granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: User not found
+
   /admin/plan-prices:
     put:
       operationId: updatePlanPrices
@@ -715,9 +802,12 @@ components:
           type: boolean
         adminPanelVerified:
           type: boolean
+        hasPasskey:
+          type: boolean
       required:
         - isAdmin
         - adminPanelVerified
+        - hasPasskey
 
     AdminPasscode:
       type: object
@@ -757,3 +847,33 @@ components:
           type: integer
       required:
         - amount
+
+    PasskeyOptions:
+      type: object
+      properties:
+        challenge:
+          type: string
+        userId:
+          type: string
+        userName:
+          type: string
+      required:
+        - challenge
+        - userId
+        - userName
+
+    PasskeyCredential:
+      type: object
+      properties:
+        credentialId:
+          type: string
+      required:
+        - credentialId
+
+    TeamMemberInput:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email

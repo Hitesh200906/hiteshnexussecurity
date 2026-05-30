@@ -1,0 +1,3 @@
+- [WebAuthn Passkey TS types](webauthn-passkey.md) — `Uint8Array` from `base64urlToBytes` needs `as unknown as ArrayBuffer` cast for WebAuthn `challenge` and `id` fields due to `ArrayBufferLike` vs `ArrayBuffer` strictness.
+- [Admin auth flow](admin-auth-flow.md) — Two-step: logged in as admin + isAdminVerified. Passcode = ADMIN_PASSCODE env var. Passkey stored as base64url credentialId in `users.passkeyCredentialId`; each admin has their own. Challenges stored in in-memory Map.
+- [Zod in api-server](api-server-zod.md) — Do NOT import `zod` or `zod/v4` directly in api-server routes; it is not in dependencies and esbuild can't resolve it. Use manual JS validation or only import from `@workspace/api-zod`.

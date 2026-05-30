@@ -31,6 +31,8 @@ import type {
   HealthStatus,
   LoginCredentials,
   MessageResponse,
+  PasskeyCredential,
+  PasskeyOptions,
   PlanPrices,
   PlanPricesInput,
   RegisterInput,
@@ -41,6 +43,7 @@ import type {
   ScanStats,
   SessionStatus,
   SignupData,
+  TeamMemberInput,
   VerifyCodeInput
 } from './api.schemas';
 
@@ -1389,6 +1392,366 @@ export const useScanCallback = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getScanCallbackMutationOptions(options));
+    }
+
+export const getGetPasskeyRegisterOptionsUrl = () => {
+
+
+
+
+  return `/api/admin/passkey/register-options`
+}
+
+/**
+ * @summary Get WebAuthn registration options (challenge)
+ */
+export const getPasskeyRegisterOptions = async ( options?: RequestInit): Promise<PasskeyOptions> => {
+
+  return customFetch<PasskeyOptions>(getGetPasskeyRegisterOptionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPasskeyRegisterOptionsQueryKey = () => {
+    return [
+    `/api/admin/passkey/register-options`
+    ] as const;
+    }
+
+
+export const getGetPasskeyRegisterOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getPasskeyRegisterOptions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPasskeyRegisterOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPasskeyRegisterOptionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPasskeyRegisterOptions>>> = ({ signal }) => getPasskeyRegisterOptions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPasskeyRegisterOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPasskeyRegisterOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getPasskeyRegisterOptions>>>
+export type GetPasskeyRegisterOptionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get WebAuthn registration options (challenge)
+ */
+
+export function useGetPasskeyRegisterOptions<TData = Awaited<ReturnType<typeof getPasskeyRegisterOptions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPasskeyRegisterOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPasskeyRegisterOptionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getVerifyPasskeyRegistrationUrl = () => {
+
+
+
+
+  return `/api/admin/passkey/register-verify`
+}
+
+/**
+ * @summary Verify WebAuthn registration and store credential
+ */
+export const verifyPasskeyRegistration = async (passkeyCredential: PasskeyCredential, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getVerifyPasskeyRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      passkeyCredential,)
+  }
+);}
+
+
+
+
+export const getVerifyPasskeyRegistrationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPasskeyRegistration>>, TError,{data: BodyType<PasskeyCredential>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyPasskeyRegistration>>, TError,{data: BodyType<PasskeyCredential>}, TContext> => {
+
+const mutationKey = ['verifyPasskeyRegistration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyPasskeyRegistration>>, {data: BodyType<PasskeyCredential>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyPasskeyRegistration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyPasskeyRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof verifyPasskeyRegistration>>>
+    export type VerifyPasskeyRegistrationMutationBody = BodyType<PasskeyCredential>
+    export type VerifyPasskeyRegistrationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Verify WebAuthn registration and store credential
+ */
+export const useVerifyPasskeyRegistration = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPasskeyRegistration>>, TError,{data: BodyType<PasskeyCredential>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyPasskeyRegistration>>,
+        TError,
+        {data: BodyType<PasskeyCredential>},
+        TContext
+      > => {
+      return useMutation(getVerifyPasskeyRegistrationMutationOptions(options));
+    }
+
+export const getVerifyPasskeyAuthUrl = () => {
+
+
+
+
+  return `/api/admin/passkey/auth-verify`
+}
+
+/**
+ * @summary Verify WebAuthn authentication and grant admin session
+ */
+export const verifyPasskeyAuth = async (passkeyCredential: PasskeyCredential, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getVerifyPasskeyAuthUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      passkeyCredential,)
+  }
+);}
+
+
+
+
+export const getVerifyPasskeyAuthMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPasskeyAuth>>, TError,{data: BodyType<PasskeyCredential>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyPasskeyAuth>>, TError,{data: BodyType<PasskeyCredential>}, TContext> => {
+
+const mutationKey = ['verifyPasskeyAuth'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyPasskeyAuth>>, {data: BodyType<PasskeyCredential>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyPasskeyAuth(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyPasskeyAuthMutationResult = NonNullable<Awaited<ReturnType<typeof verifyPasskeyAuth>>>
+    export type VerifyPasskeyAuthMutationBody = BodyType<PasskeyCredential>
+    export type VerifyPasskeyAuthMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Verify WebAuthn authentication and grant admin session
+ */
+export const useVerifyPasskeyAuth = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPasskeyAuth>>, TError,{data: BodyType<PasskeyCredential>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyPasskeyAuth>>,
+        TError,
+        {data: BodyType<PasskeyCredential>},
+        TContext
+      > => {
+      return useMutation(getVerifyPasskeyAuthMutationOptions(options));
+    }
+
+export const getRemovePasskeyUrl = () => {
+
+
+
+
+  return `/api/admin/passkey`
+}
+
+/**
+ * @summary Remove the current user's passkey
+ */
+export const removePasskey = async ( options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getRemovePasskeyUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemovePasskeyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removePasskey>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removePasskey>>, TError,void, TContext> => {
+
+const mutationKey = ['removePasskey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removePasskey>>, void> = () => {
+
+
+          return  removePasskey(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemovePasskeyMutationResult = NonNullable<Awaited<ReturnType<typeof removePasskey>>>
+
+    export type RemovePasskeyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove the current user's passkey
+ */
+export const useRemovePasskey = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removePasskey>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removePasskey>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRemovePasskeyMutationOptions(options));
+    }
+
+export const getAddTeamMemberUrl = () => {
+
+
+
+
+  return `/api/admin/team-members`
+}
+
+/**
+ * @summary Grant admin access to a user by email
+ */
+export const addTeamMember = async (teamMemberInput: TeamMemberInput, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getAddTeamMemberUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      teamMemberInput,)
+  }
+);}
+
+
+
+
+export const getAddTeamMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTeamMember>>, TError,{data: BodyType<TeamMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addTeamMember>>, TError,{data: BodyType<TeamMemberInput>}, TContext> => {
+
+const mutationKey = ['addTeamMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addTeamMember>>, {data: BodyType<TeamMemberInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  addTeamMember(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddTeamMemberMutationResult = NonNullable<Awaited<ReturnType<typeof addTeamMember>>>
+    export type AddTeamMemberMutationBody = BodyType<TeamMemberInput>
+    export type AddTeamMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Grant admin access to a user by email
+ */
+export const useAddTeamMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTeamMember>>, TError,{data: BodyType<TeamMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addTeamMember>>,
+        TError,
+        {data: BodyType<TeamMemberInput>},
+        TContext
+      > => {
+      return useMutation(getAddTeamMemberMutationOptions(options));
     }
 
 export const getUpdatePlanPricesUrl = () => {

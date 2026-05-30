@@ -10,6 +10,7 @@ export const usersTable = pgTable("users", {
   googleId: text("google_id"),
   credits: integer("credits").notNull().default(0),
   isAdmin: boolean("is_admin").notNull().default(false),
+  passkeyCredentialId: text("passkey_credential_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

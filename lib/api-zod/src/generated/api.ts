@@ -204,7 +204,8 @@ export const GetScanStatsResponse = zod.object({
  */
 export const AdminCheckResponse = zod.object({
   "isAdmin": zod.boolean(),
-  "adminPanelVerified": zod.boolean()
+  "adminPanelVerified": zod.boolean(),
+  "hasPasskey": zod.boolean()
 })
 
 
@@ -269,6 +270,60 @@ export const ScanCallbackBody = zod.object({
 })
 
 export const ScanCallbackResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Get WebAuthn registration options (challenge)
+ */
+export const GetPasskeyRegisterOptionsResponse = zod.object({
+  "challenge": zod.string(),
+  "userId": zod.string(),
+  "userName": zod.string()
+})
+
+
+/**
+ * @summary Verify WebAuthn registration and store credential
+ */
+export const VerifyPasskeyRegistrationBody = zod.object({
+  "credentialId": zod.string()
+})
+
+export const VerifyPasskeyRegistrationResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Verify WebAuthn authentication and grant admin session
+ */
+export const VerifyPasskeyAuthBody = zod.object({
+  "credentialId": zod.string()
+})
+
+export const VerifyPasskeyAuthResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Remove the current user's passkey
+ */
+export const RemovePasskeyResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Grant admin access to a user by email
+ */
+export const AddTeamMemberBody = zod.object({
+  "email": zod.string()
+})
+
+export const AddTeamMemberResponse = zod.object({
   "message": zod.string()
 })
 

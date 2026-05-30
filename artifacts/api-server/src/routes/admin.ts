@@ -9,26 +9,42 @@ import {
   UpdatePlanPricesBody,
   GetAdminUsersQueryParams,
 } from "@workspace/api-zod";
+import { randomBytes } from "crypto";
 
 const router: IRouter = Router();
 
 const ADMIN_EMAIL = "nexussecurity777@gmail.com";
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || "nexus admin";
 
-async function requireAdmin(req: any, res: any): Promise<boolean> {
+// In-memory challenge store (passkey registration / auth)
+const passkeyChallengePending = new Map<number, string>();
+
+async function requireAdminUser(req: any, res: any): Promise<{ user: typeof usersTable.$inferSelect } | null> {
   const sessionResult = await getSessionUser(req);
   if (!sessionResult || !sessionResult.user.isAdmin) {
     res.status(403).json({ error: "Forbidden" });
-    return false;
+    return null;
   }
-  return true;
+  return sessionResult;
+}
+
+async function requireAdmin(req: any, res: any): Promise<boolean> {
+  const result = await requireAdminUser(req, res);
+  return result !== null;
 }
 
 router.get("/admin/check", async (req, res): Promise<void> => {
   const sessionResult = await getSessionUser(req);
   const isAdmin = sessionResult?.user?.isAdmin ?? false;
   const adminPanelVerified = isAdmin ? await isAdminVerified(req) : false;
-  res.json({ isAdmin, adminPanelVerified });
+
+  let hasPasskey = false;
+  if (isAdmin && sessionResult) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, sessionResult.user.id));
+    hasPasskey = !!user?.passkeyCredentialId;
+  }
+
+  res.json({ isAdmin, adminPanelVerified, hasPasskey });
 });
 
 router.post("/admin/login", async (req, res): Promise<void> => {
@@ -52,6 +68,144 @@ router.post("/admin/login", async (req, res): Promise<void> => {
   await setAdminVerified(req);
   res.json({ message: "Admin access granted" });
 });
+
+// ── Passkey endpoints ──────────────────────────────────────────────
+
+router.get("/admin/passkey/register-options", async (req, res): Promise<void> => {
+  const sessionResult = await getSessionUser(req);
+  if (!sessionResult || !sessionResult.user.isAdmin) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const challenge = randomBytes(32).toString("base64url");
+  passkeyChallengePending.set(sessionResult.user.id, challenge);
+
+  res.json({
+    challenge,
+    userId: String(sessionResult.user.id),
+    userName: sessionResult.user.email,
+  });
+});
+
+router.post("/admin/passkey/register-verify", async (req, res): Promise<void> => {
+  const sessionResult = await getSessionUser(req);
+  if (!sessionResult || !sessionResult.user.isAdmin) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const credentialId = typeof req.body?.credentialId === "string" ? req.body.credentialId.trim() : "";
+  if (!credentialId) {
+    res.status(400).json({ error: "Invalid credential" });
+    return;
+  }
+
+  // Store the credential ID for this user
+  await db
+    .update(usersTable)
+    .set({ passkeyCredentialId: credentialId })
+    .where(eq(usersTable.id, sessionResult.user.id));
+
+  passkeyChallengePending.delete(sessionResult.user.id);
+  res.json({ message: "Passkey registered successfully" });
+});
+
+router.post("/admin/passkey/auth-verify", async (req, res): Promise<void> => {
+  const sessionResult = await getSessionUser(req);
+  if (!sessionResult || !sessionResult.user.isAdmin) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const authCredentialId = typeof req.body?.credentialId === "string" ? req.body.credentialId.trim() : "";
+  if (!authCredentialId) {
+    res.status(400).json({ error: "Invalid credential" });
+    return;
+  }
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, sessionResult.user.id));
+
+  if (!user?.passkeyCredentialId) {
+    res.status(400).json({ error: "No passkey registered" });
+    return;
+  }
+
+  if (user.passkeyCredentialId !== authCredentialId) {
+    res.status(401).json({ error: "Passkey mismatch" });
+    return;
+  }
+
+  await setAdminVerified(req);
+  res.json({ message: "Admin access granted via passkey" });
+});
+
+router.delete("/admin/passkey", async (req, res): Promise<void> => {
+  const sessionResult = await getSessionUser(req);
+  if (!sessionResult || !sessionResult.user.isAdmin) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const verified = await isAdminVerified(req);
+  if (!verified) {
+    res.status(403).json({ error: "Admin panel verification required" });
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ passkeyCredentialId: null })
+    .where(eq(usersTable.id, sessionResult.user.id));
+
+  res.json({ message: "Passkey removed" });
+});
+
+// ── Team members ──────────────────────────────────────────────────
+
+router.post("/admin/team-members", async (req, res): Promise<void> => {
+  const ok = await requireAdmin(req, res);
+  if (!ok) return;
+
+  const verified = await isAdminVerified(req);
+  if (!verified) {
+    res.status(403).json({ error: "Admin panel verification required" });
+    return;
+  }
+
+  const memberEmail = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!memberEmail || !memberEmail.includes("@")) {
+    res.status(400).json({ error: "Valid email required" });
+    return;
+  }
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, memberEmail));
+
+  if (!user) {
+    res.status(404).json({ error: "No account found with that email" });
+    return;
+  }
+
+  if (user.isAdmin) {
+    res.json({ message: `${user.email} already has admin access` });
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ isAdmin: true })
+    .where(eq(usersTable.id, user.id));
+
+  res.json({ message: `Admin access granted to ${user.email}` });
+});
+
+// ── User management ───────────────────────────────────────────────
 
 router.get("/admin/users", async (req, res): Promise<void> => {
   const ok = await requireAdmin(req, res);

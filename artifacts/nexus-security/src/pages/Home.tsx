@@ -9,8 +9,9 @@ import {
   Shield, Lock, Code, FileText, Activity, Terminal,
   ArrowRight, CheckCircle2, Copy, Check, Globe, Cpu, BarChart2,
   AlertTriangle, Eye, Layers, ChevronRight, Github, Linkedin, Twitter,
-  Zap, Target, Brain, FileSearch, BadgeCheck, Wifi
+  Zap, Target, Brain, FileSearch, BadgeCheck, Wifi, ScanSearch, Clock, ShieldCheck
 } from "lucide-react";
+import { GlobeAnimation } from "@/components/GlobeAnimation";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -183,63 +184,77 @@ export default function Home() {
 
   return (
     <div className="flex-1 w-full bg-background relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute inset-0 pointer-events-none -z-10">
-        <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-primary/8 blur-[140px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] bg-primary/5 blur-[140px] rounded-full" />
-      </div>
 
       {/* ── HERO ── */}
-      <section className="container mx-auto px-4 pt-32 pb-20 text-center">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary mb-8 text-xs font-mono tracking-widest uppercase">
-            <Terminal className="w-3.5 h-3.5" /> System Online
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight text-foreground brand-text">
-            AI-Powered <span className="text-primary">Scan</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Detect security flaws before attackers do. Get detailed, actionable reports
-            — trusted by developers, SMBs, and enterprises.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <motion.button
-              whileHover="hover"
-              whileTap={{ scale: 0.97 }}
-              className="relative group cursor-pointer border border-primary/60 hover:border-primary bg-transparent text-primary font-bold text-base tracking-widest px-10 py-3.5 overflow-hidden transition-colors duration-300"
-              onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              {/* Fill on hover */}
-              <motion.span
-                className="absolute inset-0 bg-primary pointer-events-none"
-                initial={{ scaleX: 0 }}
-                variants={{ hover: { scaleX: 1 } }}
-                style={{ originX: 0 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              />
-              <span className="relative z-10 flex items-center gap-2.5 group-hover:text-black transition-colors duration-300">
-                Get Started
-                <motion.span variants={{ hover: { x: 5 } }} transition={{ duration: 0.25 }}>
-                  <ArrowRight className="w-4 h-4" />
-                </motion.span>
-              </span>
-            </motion.button>
-          </div>
+      <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+        {/* Globe canvas fills the section */}
+        <GlobeAnimation className="absolute inset-0 w-full h-full" />
 
-          {/* Stats row */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 text-center">
-            {[
-              { label: "Accuracy", value: "95%" },
-              { label: "Report Delivery", value: "24h" },
-              { label: "Profile Dashboard", value: "Included" },
-            ].map(s => (
-              <div key={s.label}>
-                <div className="text-3xl font-bold text-primary font-mono">{s.value}</div>
-                <div className="text-sm text-muted-foreground mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+        {/* Content */}
+        <div className="relative z-10 text-center px-4 w-full max-w-4xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/35 bg-primary/5 text-primary mb-8 text-xs font-mono tracking-widest uppercase">
+              <motion.span
+                className="w-1.5 h-1.5 rounded-full bg-primary"
+                animate={{ opacity: [1, 0.25, 1] }}
+                transition={{ duration: 1.6, repeat: Infinity }}
+              />
+              System Online
+            </div>
+
+            {/* Heading */}
+            <h1 className="text-5xl sm:text-6xl md:text-8xl font-bold mb-6 tracking-tight text-foreground brand-text leading-none">
+              AI-Powered <span className="text-primary">Scan</span>
+            </h1>
+
+            {/* Description */}
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
+              Detect security flaws before attackers do. Get detailed, actionable reports
+              trusted by developers, startups, and enterprises.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center gap-2.5 px-8 py-4 bg-primary text-black font-bold text-sm tracking-widest hover:bg-primary/90 transition-colors duration-200"
+                onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                <ScanSearch className="w-4 h-4 shrink-0" />
+                Start Security Scan
+                <ArrowRight className="w-4 h-4 shrink-0" />
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                className="px-8 py-4 border border-white/20 text-foreground font-bold text-sm tracking-widest hover:border-white/40 hover:bg-white/5 transition-all duration-200"
+                onClick={() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                View Plans
+              </motion.button>
+            </div>
+
+            {/* Stats */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-14">
+              {[
+                { icon: Target, value: "95%", label: "Accuracy Rate" },
+                { icon: Clock, value: "24h", label: "Average Delivery" },
+                { icon: ShieldCheck, value: "15,000+", label: "Scans Completed" },
+              ].map(({ icon: Icon, value, label }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <div className="w-10 h-10 border border-primary/40 flex items-center justify-center shrink-0 bg-primary/5">
+                    <Icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-2xl font-bold text-primary font-mono leading-none">{value}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* ── SCAN TYPE OVERVIEW CARDS ── */}
@@ -289,7 +304,7 @@ export default function Home() {
             <p className="text-muted-foreground">Select the scan depth that fits your security needs.</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-5 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {(["basic", "advanced", "protection"] as ScanRequestPlan[]).map(planKey => {
               const detail = PLAN_DETAILS[planKey];
               const Icon = detail.icon;
@@ -751,7 +766,7 @@ export default function Home() {
         <div className="relative container mx-auto px-6 pt-14 pb-0">
 
           {/* Main columns */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 pb-12">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 pb-12">
 
             {/* ── COL 1: BRAND ── */}
             <div className="lg:col-span-1">
@@ -788,8 +803,6 @@ export default function Home() {
                   { label: "Basic Scan", href: "#plans" },
                   { label: "Advanced Scan", href: "#plans" },
                   { label: "Protection+ Scan", href: "#plans" },
-                  { label: "API Access", href: "#" },
-                  { label: "Threat Intelligence", href: "#" },
                 ].map(({ label, href }) => (
                   <li key={label}>
                     <a href={href} className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200">{label}</a>
@@ -806,7 +819,6 @@ export default function Home() {
                   { label: "About Us", href: "#" },
                   { label: "Careers", href: "#" },
                   { label: "Blog", href: "#" },
-                  { label: "Partners", href: "#" },
                   { label: "Contact", href: "#" },
                 ].map(({ label, href }) => (
                   <li key={label}>
@@ -821,7 +833,6 @@ export default function Home() {
               <h4 className="text-xs font-semibold text-foreground mb-4">Resources</h4>
               <ul className="space-y-3">
                 {[
-                  { label: "Documentation", href: "#" },
                   { label: "Support Center", href: "#" },
                   { label: "Case Studies", href: "#" },
                   { label: "Security Blog", href: "#" },

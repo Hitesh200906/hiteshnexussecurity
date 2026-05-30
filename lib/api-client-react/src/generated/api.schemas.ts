@@ -149,6 +149,7 @@ export interface ScanStats {
 export interface AdminAccess {
   isAdmin: boolean;
   adminPanelVerified: boolean;
+  hasPasskey: boolean;
 }
 
 export interface AdminPasscode {
@@ -166,6 +167,20 @@ export interface AdminUser {
 
 export interface AddCreditsInput {
   amount: number;
+}
+
+export interface PasskeyOptions {
+  challenge: string;
+  userId: string;
+  userName: string;
+}
+
+export interface PasskeyCredential {
+  credentialId: string;
+}
+
+export interface TeamMemberInput {
+  email: string;
 }
 
 export type GetAdminUsersParams = {

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useGetStatus, useAdminCheck, useLogout } from "@workspace/api-client-react";
-import { Shield, LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { Shield, LogOut, Settings, User } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 
@@ -17,6 +17,8 @@ export function Navbar() {
     setLocation("/");
   };
 
+  const firstName = status?.user?.name?.split(" ")[0]?.toUpperCase() || "PROFILE";
+
   return (
     <nav className="sticky top-0 z-50 w-full glass-panel border-b border-primary/20 backdrop-blur-xl">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -31,26 +33,50 @@ export function Navbar() {
         </Link>
 
         {/* Nav links */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
           <Link href="/" className="text-base font-semibold text-foreground hover:text-primary transition-colors duration-200 tracking-wide">
             Home
           </Link>
 
           {status?.loggedIn ? (
             <>
-              <Link href="/profile" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5">
-                <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
-              </Link>
               {adminCheck?.isAdmin && (
                 <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors duration-200 flex items-center gap-1.5">
                   <Settings className="w-3.5 h-3.5" /> Admin
                 </Link>
               )}
+
+              <Link href="/profile">
+                <motion.div
+                  className="relative group cursor-pointer"
+                  whileHover="hover"
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <div
+                    className="relative flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/60 hover:border-primary text-foreground font-bold text-sm tracking-widest overflow-hidden select-none transition-colors duration-200"
+                    style={{ clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)" }}
+                  >
+                    <motion.div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: "linear-gradient(90deg, transparent 0%, rgba(47,155,155,0.22) 50%, transparent 100%)",
+                        translateX: "-100%",
+                      }}
+                      variants={{ hover: { translateX: "200%" } }}
+                      transition={{ duration: 0.5, ease: "easeInOut" }}
+                    />
+                    <User className="w-3.5 h-3.5 text-primary relative z-10 shrink-0" />
+                    <span className="relative z-10">{firstName}</span>
+                  </div>
+                </motion.div>
+              </Link>
+
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground border border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 px-4 py-2 rounded-sm"
+                title="Log out"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
               >
-                <LogOut className="w-3.5 h-3.5" /> Log Out
+                <LogOut className="w-4 h-4" />
               </button>
             </>
           ) : (
@@ -60,26 +86,21 @@ export function Navbar() {
                 whileHover="hover"
                 whileTap={{ scale: 0.97 }}
               >
-                {/* Button body */}
                 <div
                   className="relative flex items-center gap-2.5 px-5 py-2.5 bg-primary/10 border border-primary text-primary-foreground font-bold text-sm tracking-widest overflow-hidden select-none"
                   style={{ clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)" }}
                 >
-                  {/* Shimmer */}
                   <motion.div
                     className="absolute inset-0 pointer-events-none"
                     style={{ background: "linear-gradient(90deg, transparent 0%, rgba(47,155,155,0.25) 50%, transparent 100%)", translateX: "-100%" }}
                     variants={{ hover: { translateX: "200%" } }}
                     transition={{ duration: 0.55, ease: "easeInOut" }}
                   />
-
-                  {/* Pulsing dot */}
                   <motion.span
                     className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 pointer-events-none"
                     animate={{ opacity: [1, 0.3, 1] }}
                     transition={{ duration: 1.4, repeat: Infinity }}
                   />
-
                   <span className="relative z-10 text-foreground font-bold tracking-widest">ACCESS SYSTEM</span>
                 </div>
               </motion.div>
