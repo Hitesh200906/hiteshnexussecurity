@@ -61,19 +61,19 @@
   --popover: 240 20% 5%;
   --popover-foreground: 210 40% 98%;
   --popover-border: 217 33% 17%;
-  --primary: 180 53% 40%;
+  --primary: 174 62% 47%;
   --primary-foreground: 0 0% 0%;
   --secondary: 217 33% 17%;
   --secondary-foreground: 210 40% 98%;
   --muted: 217 33% 17%;
   --muted-foreground: 215 16% 65%;
-  --accent: 180 53% 40%;
+  --accent: 174 62% 47%;
   --accent-foreground: 0 0% 0%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
   --input: 217 33% 17%;
-  --ring: 180 53% 40%;
-  --radius: 0.25rem;
+  --ring: 174 62% 47%;
+  --radius: 0.75rem;
 
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
@@ -92,18 +92,18 @@
   --popover: 240 20% 5%;
   --popover-foreground: 210 40% 98%;
   --popover-border: 217 33% 17%;
-  --primary: 180 53% 40%;
+  --primary: 174 62% 47%;
   --primary-foreground: 0 0% 0%;
   --secondary: 217 33% 17%;
   --secondary-foreground: 210 40% 98%;
   --muted: 217 33% 17%;
   --muted-foreground: 215 16% 65%;
-  --accent: 180 53% 40%;
+  --accent: 174 62% 47%;
   --accent-foreground: 0 0% 0%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
   --input: 217 33% 17%;
-  --ring: 180 53% 40%;
+  --ring: 174 62% 47%;
 }
 
 @layer base {
@@ -130,13 +130,13 @@
 }
 
 .glow-primary {
-  box-shadow: 0 0 20px rgba(47, 155, 155, 0.3);
+  box-shadow: 0 0 20px rgba(46, 194, 179, 0.35);
 }
 
 /* Animations */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 15px rgba(47, 155, 155, 0.2); }
-  50% { box-shadow: 0 0 25px rgba(47, 155, 155, 0.5); }
+  0%, 100% { box-shadow: 0 0 15px rgba(46, 194, 179, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(46, 194, 179, 0.5); }
 }
 
 .animate-pulse-glow {

@@ -88,38 +88,38 @@ export default function Login() {
   };
 
   return (
-    <div className="flex-1 w-full min-h-[calc(100vh-4rem)] flex items-center justify-center relative overflow-hidden bg-background">
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+    <div className="flex-1 w-full min-h-screen flex items-center justify-center relative overflow-hidden bg-[#060606] pt-28 pb-16">
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,rgba(46,194,179,0.1)_0%,transparent_70%)]" />
 
-      {/* Animated grid lines */}
+      {/* Grid lines */}
       <div className="absolute inset-0 z-0 opacity-[0.03]"
-        style={{ backgroundImage: "linear-gradient(#2f9b9b 1px, transparent 1px), linear-gradient(90deg, #2f9b9b 1px, transparent 1px)", backgroundSize: "40px 40px" }}
+        style={{ backgroundImage: "linear-gradient(#2ec2b3 1px, transparent 1px), linear-gradient(90deg, #2ec2b3 1px, transparent 1px)", backgroundSize: "40px 40px" }}
       />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md z-10 px-4"
       >
         <div className="text-center mb-8">
-          <div className="relative inline-block">
-            <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
+          <div className="relative inline-block mb-4">
+            <Shield className="w-11 h-11 text-primary mx-auto" />
             <motion.div
               className="absolute inset-0 rounded-full border border-primary/40"
-              animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
               transition={{ duration: 2.5, repeat: Infinity }}
             />
           </div>
-          <h1 className="text-2xl font-bold brand-text text-foreground tracking-widest uppercase">Nexus Security</h1>
-          <p className="text-sm text-primary font-mono tracking-wider mt-2">AUTHENTICATION_GATEWAY_</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Welcome to Nexus Security</h1>
+          <p className="text-sm text-muted-foreground mt-2">Sign in to access your security dashboard</p>
         </div>
 
-        <Card className="glass-panel border-primary/20 shadow-2xl backdrop-blur-xl">
+        <Card className="border border-white/10 rounded-2xl bg-[#0c0c0c] shadow-2xl backdrop-blur-xl">
           <Tabs defaultValue="login" className="w-full" onValueChange={() => { setSignupStep("form"); setVerificationCode(""); }}>
-            <TabsList className="grid w-full grid-cols-2 bg-black/40 p-1 rounded-t-lg rounded-b-none border-b border-border/50">
-              <TabsTrigger value="login" data-testid="tab-login" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-mono text-xs uppercase tracking-wider">Login</TabsTrigger>
-              <TabsTrigger value="signup" data-testid="tab-signup" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary font-mono text-xs uppercase tracking-wider">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-black/40 p-1 rounded-t-2xl rounded-b-none border-b border-white/8">
+              <TabsTrigger value="login" data-testid="tab-login" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs uppercase tracking-wider rounded-lg">Login</TabsTrigger>
+              <TabsTrigger value="signup" data-testid="tab-signup" className="data-[state=active]:bg-primary/15 data-[state=active]:text-primary text-xs uppercase tracking-wider rounded-lg">Sign Up</TabsTrigger>
             </TabsList>
 
             <CardContent className="p-6 pt-8">
@@ -172,9 +172,9 @@ export default function Login() {
                     type="submit"
                     data-testid="button-login"
                     disabled={loginMutation.isPending}
-                    className="w-full transform -skew-x-12 bg-primary text-primary-foreground hover:bg-primary/90 glow-primary mt-2"
+                    className="w-full h-11 rounded-full bg-primary text-black font-semibold hover:bg-primary/90 mt-2"
                   >
-                    <div className="transform skew-x-12 font-bold tracking-wider">
+                    <div className="font-semibold tracking-wide">
                       {loginMutation.isPending ? "AUTHENTICATING..." : "AUTHORIZE"}
                     </div>
                   </Button>
@@ -279,9 +279,9 @@ export default function Login() {
                         type="submit"
                         data-testid="button-signup"
                         disabled={registerMutation.isPending}
-                        className="w-full transform -skew-x-12 bg-primary text-primary-foreground hover:bg-primary/90 glow-primary mt-2"
+                        className="w-full h-11 rounded-full bg-primary text-black font-semibold hover:bg-primary/90 mt-2"
                       >
-                        <div className="transform skew-x-12 font-bold tracking-wider">
+                        <div className="font-semibold tracking-wide">
                           {registerMutation.isPending ? "SENDING CODE..." : "ESTABLISH IDENTITY"}
                         </div>
                       </Button>
@@ -336,9 +336,9 @@ export default function Login() {
                           type="submit"
                           data-testid="button-verify-email"
                           disabled={verifyEmailMutation.isPending || verificationCode.length !== 6}
-                          className="w-full transform -skew-x-12 bg-primary text-primary-foreground hover:bg-primary/90 glow-primary"
+                          className="w-full h-11 rounded-full bg-primary text-black font-semibold hover:bg-primary/90"
                         >
-                          <div className="transform skew-x-12 font-bold tracking-wider">
+                          <div className="font-semibold tracking-wide">
                             {verifyEmailMutation.isPending ? "VERIFYING..." : "CONFIRM IDENTITY"}
                           </div>
                         </Button>
