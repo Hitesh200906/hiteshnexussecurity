@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navbar } from "@/components/Navbar";
 import Home from "@/pages/Home";
-import Features from "@/pages/Features";
 import Pricing from "@/pages/Pricing";
 import Reports from "@/pages/Reports";
 import Contact from "@/pages/Contact";
@@ -32,7 +31,6 @@ function Router() {
       <main className="flex-1 flex flex-col relative z-10">
         <Switch>
           <Route path="/" component={Home} />
-          <Route path="/features" component={Features} />
           <Route path="/pricing" component={Pricing} />
           <Route path="/reports" component={Reports} />
           <Route path="/contact" component={Contact} />

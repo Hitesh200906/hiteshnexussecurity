@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Lock, Code, FileText, Activity, ArrowRight, CheckCircle2, Copy, Check,
-  Globe, Cpu, AlertTriangle, Eye, ScanSearch,
+  Code, FileText, ArrowRight, CheckCircle2, Copy, Check,
+  Globe, AlertTriangle, Eye, ScanSearch,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
@@ -16,7 +16,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScanRequestPlan, ScanRequestVerificationMethod } from "@workspace/api-client-react";
-import type { LucideIcon } from "lucide-react";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
@@ -27,71 +26,42 @@ const formSchema = z.object({
   businessEmail: z.string().email("Invalid business email"),
 });
 
-type PlanDetail = {
+type PlanCard = {
   name: string;
-  tag: string;
-  tagColor: string;
-  icon: LucideIcon;
+  price: string;
+  period?: string;
   description: string;
   features: string[];
-  notIncluded: string[];
+  cta: string;
+  popular?: boolean;
+  contact?: boolean;
 };
 
-const PLAN_DETAILS: Record<ScanRequestPlan, PlanDetail> = {
+const PLAN_CARDS: Record<ScanRequestPlan, PlanCard> = {
   basic: {
     name: "Starter",
-    tag: "Free",
-    tagColor: "text-slate-400 bg-slate-400/10 border-slate-400/30",
-    icon: Activity,
-    description: "Ideal for quick checks and first-time users.",
-    features: [
-      "Surface-level scan of first 2–3 pages",
-      "Open port detection and service fingerprinting",
-      "Missing security headers analysis (CSP, HSTS, X-Frame)",
-      "Basic SSL/TLS certificate validation",
-    ],
-    notIncluded: [
-      "Deep crawl and OWASP Top 10",
-      "Critical CVE detection",
-    ],
+    price: "₹999",
+    period: "/scan",
+    description: "For founders and indie hackers running their first audit.",
+    features: ["Basic Scan", "PDF Report", "Email Support"],
+    cta: "Get Started",
   },
   advanced: {
     name: "Professional",
-    tag: "Most Popular",
-    tagColor: "text-primary bg-primary/10 border-primary/30",
-    icon: Cpu,
-    description: "Full website crawl. The choice of serious security teams.",
-    features: [
-      "Complete website crawl — every page and endpoint",
-      "Full OWASP Top 10 coverage including injection flaws",
-      "XSS, CSRF, SSRF, and open redirect detection",
-      "API endpoint discovery and fuzzing",
-      "Severity-sorted HTML report with CVSS scores",
-      "Developer-friendly remediation guide per finding",
-    ],
-    notIncluded: [
-      "Critical/zero-day CVE scanning",
-      "Compliance mapping (PCI-DSS, ISO 27001)",
-    ],
+    price: "₹4,999",
+    period: "/month",
+    description: "Everything growing teams need to stay continuously protected.",
+    features: ["Full Security Audit", "Priority Reports", "AI Recommendations", "API Analysis"],
+    cta: "Most Popular",
+    popular: true,
   },
   protection: {
     name: "Enterprise",
-    tag: "Enterprise Grade",
-    tagColor: "text-amber-400 bg-amber-400/10 border-amber-400/30",
-    icon: Lock,
-    description: "Maximum depth. Critical vulnerabilities and compliance.",
-    features: [
-      "Everything in Professional, plus:",
-      "Deep scan — all subdomains and APIs",
-      "Critical CVEs: SQL injection, RCE, LFI detection",
-      "Zero-day threat intelligence (CVE database)",
-      "Sensitive data exposure and PII leak detection",
-      "Compliance mapping: PCI-DSS, HIPAA, ISO 27001, GDPR",
-      "Executive summary + technical report",
-      "Vulnerability timeline and risk scoring",
-      "Priority support with 12-hour response SLA",
-    ],
-    notIncluded: [],
+    price: "Custom",
+    description: "Dedicated coverage for regulated environments and large estates.",
+    features: ["Dedicated Security Team", "Continuous Monitoring", "Compliance Reports", "Custom Integrations"],
+    cta: "Contact Sales",
+    contact: true,
   },
 };
 
@@ -180,80 +150,67 @@ export function PricingPlans() {
 
   return (
     <div className="container mx-auto px-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto items-start">
-        {(["basic", "advanced", "protection"] as ScanRequestPlan[]).map(planKey => {
-          const detail = PLAN_DETAILS[planKey];
-          const Icon = detail.icon;
-          const price = planPrice(planKey);
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-stretch">
+        {(["basic", "advanced", "protection"] as ScanRequestPlan[]).map((planKey, i) => {
+          const card = PLAN_CARDS[planKey];
           const isSelected = selectedPlan === planKey;
-          const isPopular = planKey === "advanced";
 
           return (
-            <motion.div key={planKey} whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="min-w-0">
-              <Card className={`border rounded-2xl h-full flex flex-col transition-all duration-300 relative bg-[#0c0c0c]
-                ${isSelected ? "border-primary shadow-[0_0_32px_rgba(46,194,179,0.2)]" : isPopular ? "border-primary/45 shadow-[0_0_40px_rgba(46,194,179,0.12)]" : "border-white/8 hover:border-primary/30"}`}>
+            <motion.div
+              key={planKey}
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className={`relative flex flex-col rounded-2xl p-8 bg-black transition-all duration-300 ${
+                card.popular
+                  ? "border border-primary/50 shadow-[0_0_50px_-8px_rgba(46,194,179,0.45)] lg:-mt-4 lg:mb-4"
+                  : isSelected
+                    ? "border border-primary shadow-[0_0_45px_-8px_rgba(46,194,179,0.5)]"
+                    : "border border-primary/15 shadow-[0_0_25px_-8px_rgba(46,194,179,0.2)] hover:border-primary/40 hover:shadow-[0_0_35px_-6px_rgba(46,194,179,0.35)]"
+              }`}
+            >
+              {card.popular && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="px-4 py-1.5 rounded-full bg-primary text-black text-[10px] font-bold tracking-[0.18em] uppercase shadow-[0_0_24px_rgba(46,194,179,0.5)]">
+                    Most Popular
+                  </span>
+                </div>
+              )}
 
-                {isPopular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-primary text-black text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-[0.2em] whitespace-nowrap shadow-[0_0_20px_rgba(46,194,179,0.4)]">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
+              <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-5">
+                {card.name}
+              </div>
 
-                <CardHeader className="pt-7 pb-3 px-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-full border border-primary/25 bg-primary/5 flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${detail.tagColor}`}>
-                      {detail.tag}
-                    </span>
-                  </div>
-                  <CardTitle className="text-lg">{detail.name}</CardTitle>
-                  <CardDescription className="text-xs leading-relaxed">{detail.description}</CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold font-mono text-foreground">{price}</span>
-                    <span className="text-muted-foreground text-xs ml-1.5">
-                      {price === 0 ? "credits (Free)" : "credits / scan"}
-                    </span>
-                  </div>
-                </CardHeader>
+              <div className="flex items-end gap-1.5 mb-4">
+                <span className="text-5xl font-bold text-foreground leading-none">{card.price}</span>
+                {card.period && <span className="text-muted-foreground text-sm mb-1">{card.period}</span>}
+              </div>
 
-                <CardContent className="flex-1 flex flex-col gap-3 px-6 pb-6">
-                  <ul className="space-y-2">
-                    {detail.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-                        <span className={f.startsWith("Everything") ? "text-primary font-medium" : "text-muted-foreground"}>{f}</span>
-                      </li>
-                    ))}
-                    {detail.notIncluded.map((f, i) => (
-                      <li key={`no-${i}`} className="flex items-start gap-2 text-xs opacity-35">
-                        <div className="w-3.5 h-3.5 shrink-0 mt-0.5 flex items-center justify-center">
-                          <div className="w-2.5 h-px bg-muted-foreground" />
-                        </div>
-                        <span className="text-muted-foreground line-through">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-8 min-h-[40px]">
+                {card.description}
+              </p>
 
-                  <div className="mt-auto pt-5">
-                    <Button
-                      data-testid={`button-select-plan-${planKey}`}
-                      onClick={() => handleSelectPlan(planKey)}
-                      className={`w-full font-semibold tracking-wide text-xs rounded-full h-11 ${isSelected
-                        ? "bg-primary text-black hover:bg-primary/90"
-                        : isPopular
-                          ? "bg-white text-black hover:bg-white/90 shadow-[0_0_24px_rgba(255,255,255,0.15)]"
-                          : "bg-transparent border border-primary/40 text-primary hover:bg-primary/10"
-                      }`}
-                    >
-                      {isSelected ? "Selected" : "Select Plan"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <ul className="space-y-3.5 mb-10 flex-1">
+                {card.features.map((feature) => (
+                  <li key={feature} className="flex items-center gap-3 text-sm text-foreground/90">
+                    <Check className="w-4 h-4 shrink-0 text-primary" strokeWidth={2.5} />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                data-testid={`button-select-plan-${planKey}`}
+                onClick={() => (card.contact ? setLocation("/contact") : handleSelectPlan(planKey))}
+                className={`w-full rounded-full h-12 text-sm font-semibold ${
+                  card.popular
+                    ? "bg-white text-black hover:bg-white/90 shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+                    : "bg-white/5 border border-white/15 text-foreground hover:bg-white/10 hover:border-white/25"
+                }`}
+              >
+                {isSelected ? "Selected" : card.cta}
+              </Button>
             </motion.div>
           );
         })}
@@ -279,7 +236,7 @@ export function PricingPlans() {
                   <div>
                     <h3 className="text-xl font-bold text-foreground">Scan Request</h3>
                     <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-[0.2em]">
-                      Plan: {PLAN_DETAILS[selectedPlan].name} — {planPrice(selectedPlan)} credits
+                      Plan: {PLAN_CARDS[selectedPlan].name} — {planPrice(selectedPlan)} credits
                     </p>
                   </div>
                 </div>

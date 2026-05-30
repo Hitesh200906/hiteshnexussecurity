@@ -48,7 +48,7 @@ export function ReportShowcase({ showHeader = true }: { showHeader?: boolean }) 
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="max-w-4xl mx-auto rounded-2xl border border-white/10 bg-[#0a0a0a] overflow-hidden shadow-[0_0_60px_rgba(46,194,179,0.08)]"
+          className="max-w-4xl mx-auto rounded-2xl border border-primary/20 bg-black overflow-hidden shadow-[0_0_60px_-8px_rgba(46,194,179,0.3)]"
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/8 bg-white/[0.02]">
             <div className="flex items-center gap-3">
@@ -136,7 +136,7 @@ export function ReportShowcase({ showHeader = true }: { showHeader?: boolean }) 
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.45, delay: i * 0.08 }}
-              className="p-6 border border-white/8 rounded-xl bg-[#0c0c0c] hover:border-primary/25 transition-all duration-300"
+              className="p-6 rounded-xl bg-black border border-primary/15 shadow-[0_0_22px_-6px_rgba(46,194,179,0.18)] hover:border-primary/45 hover:shadow-[0_0_32px_-4px_rgba(46,194,179,0.4)] transition-all duration-300"
             >
               <div className="w-10 h-10 rounded-full border border-primary/25 bg-primary/5 flex items-center justify-center mb-4">
                 <Icon className="w-5 h-5 text-primary" />

@@ -1,14 +1,16 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { GlobeAnimation } from "@/components/GlobeAnimation";
 
 const COMPLIANCE = ["SOC 2 TYPE II", "ISO 27001", "OWASP VERIFIED", "GDPR COMPLIANT"];
 
 export function Hero() {
   return (
-    <section className="relative min-h-[92vh] flex flex-col items-center justify-center overflow-hidden pt-24">
-      <div className="absolute inset-0 bg-[#060606]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_42%,rgba(46,194,179,0.08)_0%,transparent_70%)]" />
+    <section className="relative min-h-[100vh] flex flex-col items-center justify-center overflow-hidden pt-44 pb-20">
+      <div className="absolute inset-0 bg-black" />
+      <GlobeAnimation className="absolute inset-0 w-full h-full opacity-80" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_42%,rgba(46,194,179,0.10)_0%,transparent_70%)]" />
       <div className="absolute inset-0 opacity-[0.025]"
         style={{
           backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",

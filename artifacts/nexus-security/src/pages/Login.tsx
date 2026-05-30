@@ -88,13 +88,8 @@ export default function Login() {
   };
 
   return (
-    <div className="flex-1 w-full min-h-screen flex items-center justify-center relative overflow-hidden bg-[#060606] pt-28 pb-16">
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,rgba(46,194,179,0.1)_0%,transparent_70%)]" />
-
-      {/* Grid lines */}
-      <div className="absolute inset-0 z-0 opacity-[0.03]"
-        style={{ backgroundImage: "linear-gradient(#2ec2b3 1px, transparent 1px), linear-gradient(90deg, #2ec2b3 1px, transparent 1px)", backgroundSize: "40px 40px" }}
-      />
+    <div className="flex-1 w-full min-h-screen flex items-center justify-center relative overflow-hidden bg-black pt-28 pb-16">
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_30%,rgba(46,194,179,0.08)_0%,transparent_70%)]" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

@@ -12,8 +12,10 @@ export function CtaSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto"
+          className="relative max-w-4xl mx-auto rounded-3xl border border-white/10 bg-black px-6 py-20 sm:px-12 text-center overflow-hidden shadow-[0_0_70px_-20px_rgba(46,194,179,0.35)]"
         >
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-2/3 bg-gradient-to-r from-transparent via-primary to-transparent" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-1/3 bg-primary blur-[6px] opacity-70" />
           <h2 className="text-5xl md:text-6xl font-bold leading-[1.05] mb-5">
             <span className="block text-white">Ship faster.</span>
             <span className="block"
