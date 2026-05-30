@@ -11,6 +11,7 @@ export * from './adminAccess';
 export * from './adminPasscode';
 export * from './adminUser';
 export * from './authResponse';
+export * from './changePasswordInput';
 export * from './emailVerifyInput';
 export * from './errorResponse';
 export * from './getAdminUsersParams';

@@ -100,6 +100,19 @@ export const LogoutResponse = zod.object({
 
 
 /**
+ * @summary Change the current user's password
+ */
+export const ChangePasswordBody = zod.object({
+  "currentPassword": zod.string(),
+  "newPassword": zod.string()
+})
+
+export const ChangePasswordResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
  * @summary Get current plan credit prices
  */
 export const GetPlanPricesResponse = zod.object({

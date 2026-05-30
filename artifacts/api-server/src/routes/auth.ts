@@ -10,6 +10,7 @@ import {
   SignupBody,
   RegisterBody,
   VerifyEmailBody,
+  ChangePasswordBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -273,6 +274,41 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 router.post("/auth/logout", async (req, res): Promise<void> => {
   await destroySession(req, res);
   res.json({ message: "Logged out successfully" });
+});
+
+router.post("/auth/change-password", async (req, res): Promise<void> => {
+  const result = await getSessionUser(req);
+  if (!result) {
+    res.status(401).json({ error: "You must be logged in to change your password" });
+    return;
+  }
+
+  const parsed = ChangePasswordBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { currentPassword, newPassword } = parsed.data;
+
+  if (hashPassword(currentPassword) !== result.user.passwordHash) {
+    res.status(401).json({ error: "Current password is incorrect" });
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "New password must be at least 6 characters" });
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ passwordHash: hashPassword(newPassword) })
+    .where(eq(usersTable.id, result.user.id));
+
+  logger.info({ userId: result.user.id }, "User changed password");
+
+  res.json({ message: "Password updated successfully" });
 });
 
 // Google OAuth stub

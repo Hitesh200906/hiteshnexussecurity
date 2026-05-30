@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 
 type Particle = { bx: number; by: number; bz: number; sz: number; ph: number };
-type OrbParticle = { angle: number; lat: number; speed: number; dist: number };
 
 export function GlobeAnimation({ className }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,13 +31,6 @@ export function GlobeAnimation({ className }: { className?: string }) {
       };
     });
 
-    const orbs: OrbParticle[] = Array.from({ length: 9 }, () => ({
-      angle: Math.random() * Math.PI * 2,
-      lat: (Math.random() - 0.5) * 1.4,
-      speed: 0.007 + Math.random() * 0.014,
-      dist: 1.1 + Math.random() * 0.14,
-    }));
-
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = canvas.offsetWidth * dpr;
@@ -63,13 +55,6 @@ export function GlobeAnimation({ className }: { className?: string }) {
       const cx = w * 0.5;
       const cy = h * 0.44;
 
-      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.6);
-      grd.addColorStop(0, "rgba(47,155,155,0.08)");
-      grd.addColorStop(0.55, "rgba(30,100,100,0.03)");
-      grd.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, w, h);
-
       type PP = { sx: number; sy: number; depth: number; p: Particle; wave: number; vis: number };
       const pp: PP[] = pts.map(p => {
         const { rx, rz } = rotY(p.bx, p.bz, rot);
@@ -80,28 +65,6 @@ export function GlobeAnimation({ className }: { className?: string }) {
         const wave = 0.4 + 0.6 * Math.sin(p.ph + t + p.by * 3.8 + p.bx * 2.2);
         return { sx, sy, depth: rz, p, wave, vis };
       });
-
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i < pp.length; i++) {
-        const a = pp[i];
-        if (a.vis < 0.1) continue;
-        for (let j = i + 1; j < pp.length; j++) {
-          const b = pp[j];
-          if (b.vis < 0.1) continue;
-          const dx = a.p.bx - b.p.bx;
-          const dy = a.p.by - b.p.by;
-          const dz = a.p.bz - b.p.bz;
-          const d2 = dx * dx + dy * dy + dz * dz;
-          if (d2 < 0.054) {
-            const alpha = Math.min(a.vis, b.vis) * (1 - d2 / 0.054) * 0.14 * Math.min(a.wave, b.wave);
-            ctx.strokeStyle = `rgba(47,210,210,${alpha.toFixed(3)})`;
-            ctx.beginPath();
-            ctx.moveTo(a.sx, a.sy);
-            ctx.lineTo(b.sx, b.sy);
-            ctx.stroke();
-          }
-        }
-      }
 
       for (const { sx, sy, p, wave, vis } of pp) {
         if (vis < 0.05) continue;
@@ -121,52 +84,6 @@ export function GlobeAnimation({ className }: { className?: string }) {
         ctx.arc(sx, sy, Math.max(0.3, sz), 0, Math.PI * 2);
         ctx.fill();
       }
-
-      for (const orb of orbs) {
-        orb.angle += orb.speed;
-        const ox = Math.cos(orb.angle) * Math.cos(orb.lat) * orb.dist;
-        const oy = Math.sin(orb.lat) * orb.dist;
-        const oz = Math.sin(orb.angle) * Math.cos(orb.lat) * orb.dist;
-        const { rx, rz } = rotY(ox, oz, rot);
-        if (rz < -0.1) continue;
-        const persp = 1.9 / (1.9 + rz * 0.26);
-        const sx = cx + rx * R * persp;
-        const sy = cy + oy * R * persp;
-        const vis = (rz + 1) * 0.5;
-        const gr2 = ctx.createRadialGradient(sx, sy, 0, sx, sy, 4);
-        gr2.addColorStop(0, `rgba(100,255,255,${(vis * 0.85).toFixed(3)})`);
-        gr2.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = gr2;
-        ctx.beginPath();
-        ctx.arc(sx, sy, 4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.lineWidth = 0.4;
-      const gridY = h * 0.66;
-      const spacing = 58;
-      for (let gx = 0; gx < w; gx += spacing) {
-        const wv = Math.sin(t * 0.35 + gx * 0.007) * 7;
-        ctx.strokeStyle = "rgba(47,155,155,0.055)";
-        ctx.beginPath();
-        ctx.moveTo(gx, gridY + wv);
-        ctx.lineTo(gx, h);
-        ctx.stroke();
-      }
-      for (let gy = gridY; gy < h; gy += spacing) {
-        const wv = Math.sin(t * 0.22 + gy * 0.009) * 5;
-        ctx.strokeStyle = "rgba(47,155,155,0.045)";
-        ctx.beginPath();
-        ctx.moveTo(0, gy + wv);
-        ctx.lineTo(w, gy + wv);
-        ctx.stroke();
-      }
-
-      const fadeGrd = ctx.createLinearGradient(0, h * 0.85, 0, h);
-      fadeGrd.addColorStop(0, "rgba(0,0,0,0)");
-      fadeGrd.addColorStop(1, "rgba(0,0,0,0.6)");
-      ctx.fillStyle = fadeGrd;
-      ctx.fillRect(0, h * 0.85, w, h * 0.15);
 
       animId = requestAnimationFrame(draw);
     };
