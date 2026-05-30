@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useLocation } from "wouter";
 import { useGetPlanPrices, useRequestScan, useVerifyCode } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -101,6 +102,7 @@ export function PricingPlans() {
   const requestScan = useRequestScan();
   const verifyCodeMutation = useVerifyCode();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const formRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -523,7 +525,7 @@ export function PricingPlans() {
                 Track progress and download your report from the dashboard once scanning is complete.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button onClick={() => window.location.href = "/profile"} className="rounded-full bg-primary text-black font-semibold hover:bg-primary/90">
+                <Button onClick={() => setLocation("/profile")} className="rounded-full bg-primary text-black font-semibold hover:bg-primary/90">
                   <span className="flex items-center gap-2">View Dashboard <ArrowRight className="w-4 h-4" /></span>
                 </Button>
                 <Button onClick={() => { setScanState({ status: "idle" }); setSelectedPlan(null); }} variant="outline" className="rounded-full border-white/15 hover:bg-white/5">

@@ -67,6 +67,7 @@ export function Navbar() {
                 <button
                   onClick={handleLogout}
                   title="Log out"
+                  aria-label="Log out"
                   className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 px-1"
                 >
                   <LogOut className="w-4 h-4" />

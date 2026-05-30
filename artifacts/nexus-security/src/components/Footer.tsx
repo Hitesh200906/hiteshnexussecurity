@@ -22,11 +22,17 @@ const COLUMNS = [
   {
     title: "Legal",
     links: [
-      { label: "Privacy Policy", href: "#" },
-      { label: "Terms of Service", href: "#" },
-      { label: "Compliance", href: "#" },
+      { label: "Privacy Policy", href: "/contact" },
+      { label: "Terms of Service", href: "/contact" },
+      { label: "Compliance", href: "/contact" },
     ],
   },
+];
+
+const SOCIALS = [
+  { icon: Github, label: "GitHub", href: "https://github.com" },
+  { icon: Linkedin, label: "LinkedIn", href: "https://linkedin.com" },
+  { icon: Twitter, label: "Twitter", href: "https://twitter.com" },
 ];
 
 export function Footer() {
@@ -46,12 +52,8 @@ export function Footer() {
               AI-powered security analysis built for modern engineering teams. Detect vulnerabilities before attackers do.
             </p>
             <div className="flex items-center gap-2">
-              {[
-                { icon: Github, label: "GitHub" },
-                { icon: Linkedin, label: "LinkedIn" },
-                { icon: Twitter, label: "Twitter" },
-              ].map(({ icon: Icon, label }) => (
-                <a key={label} href="#" aria-label={label}
+              {SOCIALS.map(({ icon: Icon, label, href }) => (
+                <a key={label} href={href} target="_blank" rel="noreferrer noopener" aria-label={label}
                   className="w-9 h-9 border border-white/10 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-all duration-200"
                 >
                   <Icon className="w-4 h-4" />
