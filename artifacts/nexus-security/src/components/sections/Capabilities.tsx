@@ -61,9 +61,10 @@ export function Capabilities() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.45, delay: (i % 3) * 0.08 }}
-              className="group relative rounded-2xl bg-black border border-primary/15 p-8 shadow-[0_0_25px_-6px_rgba(46,194,179,0.18)] hover:border-primary/45 hover:shadow-[0_0_35px_-4px_rgba(46,194,179,0.4)] transition-all duration-300"
+              whileHover={{ scale: 1.04 }}
+              className="group relative rounded-2xl bg-black border border-white/10 p-8"
             >
-              <div className="w-11 h-11 rounded-full border border-primary/25 bg-primary/5 flex items-center justify-center mb-5 group-hover:border-primary/60 group-hover:shadow-[0_0_20px_rgba(46,194,179,0.35)] transition-all duration-300">
+              <div className="w-11 h-11 rounded-full border border-primary/25 bg-primary/5 flex items-center justify-center mb-5">
                 <Icon className="w-5 h-5 text-primary" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2.5">{title}</h3>

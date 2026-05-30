@@ -6,8 +6,6 @@ type Stat = { value: number; suffix: string; decimals?: number; label: string };
 const STATS: Stat[] = [
   { value: 95, suffix: "%", label: "Accuracy Rate" },
   { value: 24, suffix: "h", label: "Average Delivery" },
-  { value: 15000, suffix: "+", label: "Scans Completed" },
-  { value: 250000, suffix: "+", label: "Vulnerabilities Detected" },
   { value: 99.9, suffix: "%", decimals: 1, label: "System Uptime" },
 ];
 
@@ -49,7 +47,7 @@ export function StatsBar() {
   return (
     <section ref={ref} className="relative py-20 border-y border-white/8 bg-[#070707]">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-y-10 gap-x-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-10 gap-x-4">
           {STATS.map((s, i) => (
             <motion.div
               key={s.label}

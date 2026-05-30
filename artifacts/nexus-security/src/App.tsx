@@ -10,6 +10,7 @@ import Reports from "@/pages/Reports";
 import Contact from "@/pages/Contact";
 import Login from "@/pages/Login";
 import Profile from "@/pages/Profile";
+import Dashboard from "@/pages/Dashboard";
 import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 
@@ -35,6 +36,7 @@ function Router() {
           <Route path="/reports" component={Reports} />
           <Route path="/contact" component={Contact} />
           <Route path="/login" component={Login} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/profile" component={Profile} />
           <Route path="/admin" component={Admin} />
           <Route component={NotFound} />

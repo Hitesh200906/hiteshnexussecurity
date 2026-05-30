@@ -1,20 +1,32 @@
 import { useState } from "react";
-import { useGetStatus, useGetScanStats, useGetScans } from "@workspace/api-client-react";
+import { useGetStatus, useGetScanStats, useGetScans, useChangePassword, useLogout } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, ShieldCheck, Coins, Download, Eye, X, LayoutDashboard, ArrowRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { Activity, ShieldCheck, Coins, Download, Eye, X, User, ArrowRight, KeyRound, LogOut, LayoutGrid } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
 
 export default function Profile() {
   const { data: status } = useGetStatus();
   const { data: stats } = useGetScanStats({ query: { enabled: !!status?.loggedIn, queryKey: ["scan-stats"] } });
   const { data: scans } = useGetScans({ query: { enabled: !!status?.loggedIn, queryKey: ["scans"] } });
+  const changePassword = useChangePassword();
+  const logout = useLogout();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   if (!status?.loggedIn) {
     return (
@@ -22,7 +34,7 @@ export default function Profile() {
         <Card className="border border-white/10 rounded-2xl bg-[#0c0c0c] p-10 text-center max-w-md">
           <ShieldCheck className="w-12 h-12 text-primary/50 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-foreground mb-2">Sign in required</h2>
-          <p className="text-sm text-muted-foreground mb-6">You need to be logged in to access your dashboard.</p>
+          <p className="text-sm text-muted-foreground mb-6">You need to be logged in to view your profile.</p>
           <Link href="/login" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-black font-semibold text-sm rounded-full hover:bg-primary/90 transition-colors">
             Go to Login <ArrowRight className="w-4 h-4" />
           </Link>
@@ -36,34 +48,95 @@ export default function Profile() {
   const STAT_CARDS = [
     { label: "Available Credits", value: stats?.credits ?? 0, icon: Coins, accent: true },
     { label: "Total Scans", value: stats?.totalScans ?? 0, icon: Activity },
-    { label: "Completed Reports", value: stats?.completedScans ?? 0, icon: ShieldCheck },
+    { label: "Completed Scans", value: stats?.completedScans ?? 0, icon: ShieldCheck },
   ];
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast({ title: "Password too short", description: "New password must be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Passwords do not match", description: "Confirm your new password correctly.", variant: "destructive" });
+      return;
+    }
+    try {
+      const res = await changePassword.mutateAsync({ data: { currentPassword, newPassword } });
+      toast({ title: "Password updated", description: res.message });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      const msg = error?.data?.error || error?.message || "Failed to update password.";
+      toast({ title: "Could not update password", description: msg, variant: "destructive" });
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout.mutateAsync(undefined);
+      queryClient.clear();
+      setLocation("/");
+    } catch {
+      toast({ title: "Could not sign out", description: "Please try again.", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="flex-1 w-full bg-[#060606] relative overflow-hidden flex flex-col">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_40%_at_50%_0%,rgba(46,194,179,0.07)_0%,transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_40%_at_50%_0%,rgba(46,194,179,0.06)_0%,transparent_70%)]" />
 
       <div className="relative z-10 flex-1 w-full pt-32 pb-20 px-4">
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="max-w-5xl mx-auto space-y-8">
 
+          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full border border-primary/30 bg-primary/5 flex items-center justify-center">
-                <LayoutDashboard className="w-5 h-5 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full border border-primary/30 bg-primary/5 flex items-center justify-center">
+                <User className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-                <p className="text-muted-foreground text-sm mt-0.5">{user?.name} · {user?.email}</p>
+                <h1 className="text-2xl font-bold text-foreground">{user?.name}</h1>
+                <p className="text-muted-foreground text-sm mt-0.5">{user?.email}</p>
               </div>
             </div>
-            <Link href="/pricing" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-black font-semibold text-sm rounded-full hover:bg-white/90 transition-colors w-fit shadow-[0_0_24px_rgba(255,255,255,0.12)]">
-              New Scan <ArrowRight className="w-4 h-4" />
+            <Link href="/dashboard" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/15 text-foreground font-semibold text-sm rounded-full hover:bg-white/10 transition-colors w-fit">
+              <LayoutGrid className="w-4 h-4" /> Go to Dashboard
             </Link>
           </div>
 
+          {/* Account details */}
+          <Card className="border border-white/8 rounded-2xl bg-[#0c0c0c]">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-foreground">Account Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
+                <div>
+                  <p className="text-xs font-mono uppercase tracking-[0.15em] text-muted-foreground mb-1">Full Name</p>
+                  <p className="text-foreground">{user?.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-mono uppercase tracking-[0.15em] text-muted-foreground mb-1">Email</p>
+                  <p className="text-foreground">{user?.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-mono uppercase tracking-[0.15em] text-muted-foreground mb-1">Account Type</p>
+                  <p className="text-foreground">{user?.isAdmin ? "Administrator" : "Member"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-mono uppercase tracking-[0.15em] text-muted-foreground mb-1">Member Since</p>
+                  <p className="text-foreground">{user?.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "—"}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {STAT_CARDS.map(({ label, value, icon: Icon, accent }) => (
-              <Card key={label} className={`border rounded-2xl bg-[#0c0c0c] ${accent ? "border-primary/40 shadow-[0_0_32px_rgba(46,194,179,0.12)]" : "border-white/8"}`}>
+              <Card key={label} className={`border rounded-2xl bg-[#0c0c0c] ${accent ? "border-primary/40" : "border-white/8"}`}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-xs font-mono uppercase tracking-[0.15em] text-muted-foreground">{label}</CardTitle>
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center ${accent ? "border border-primary/30 bg-primary/10" : "border border-white/8 bg-white/5"}`}>
@@ -77,6 +150,77 @@ export default function Profile() {
             ))}
           </div>
 
+          {/* Change password + Sign out */}
+          <Card className="border border-white/8 rounded-2xl bg-[#0c0c0c]">
+            <CardHeader className="flex flex-row items-center gap-2.5">
+              <KeyRound className="w-4 h-4 text-primary" />
+              <CardTitle className="text-base font-semibold text-foreground">Change Password</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleChangePassword} className="space-y-5 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword" className="text-sm text-muted-foreground">Current Password</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    autoComplete="current-password"
+                    data-testid="input-current-password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                    className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword" className="text-sm text-muted-foreground">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    data-testid="input-new-password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm text-muted-foreground">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    data-testid="input-confirm-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  data-testid="button-change-password"
+                  disabled={changePassword.isPending}
+                  className="rounded-full bg-primary text-black font-semibold hover:bg-primary/90 h-11 px-6"
+                >
+                  {changePassword.isPending ? "Updating..." : "Update Password"}
+                </Button>
+              </form>
+
+              <div className="mt-8 pt-6 border-t border-white/8">
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  data-testid="button-logout"
+                  className="rounded-full border-white/15 text-muted-foreground hover:text-foreground hover:bg-white/5 h-11"
+                >
+                  <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Scan history */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">Scan History</h2>
 

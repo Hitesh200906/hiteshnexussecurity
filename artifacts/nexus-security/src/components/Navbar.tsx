@@ -8,7 +8,7 @@ import { useState } from "react";
 const NAV_LINKS = [
   { label: "Features", href: "/" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Reports", href: "/reports" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -122,7 +122,7 @@ export function Navbar() {
                     {adminCheck?.isAdmin && (
                       <Link href="/admin" onClick={() => setMenuOpen(false)} className="text-sm text-muted-foreground">Admin</Link>
                     )}
-                    <Link href="/profile" onClick={() => setMenuOpen(false)} className="text-sm text-foreground">Dashboard</Link>
+                    <Link href="/profile" onClick={() => setMenuOpen(false)} className="text-sm text-foreground">Profile</Link>
                     <button onClick={handleLogout} className="text-sm text-muted-foreground text-left">Log out</button>
                   </>
                 ) : (

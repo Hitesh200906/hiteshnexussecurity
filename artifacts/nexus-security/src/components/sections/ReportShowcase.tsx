@@ -48,7 +48,7 @@ export function ReportShowcase({ showHeader = true }: { showHeader?: boolean }) 
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="max-w-4xl mx-auto rounded-2xl border border-primary/20 bg-black overflow-hidden shadow-[0_0_60px_-8px_rgba(46,194,179,0.3)]"
+          className="max-w-4xl mx-auto rounded-2xl border border-white/10 bg-black overflow-hidden"
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/8 bg-white/[0.02]">
             <div className="flex items-center gap-3">

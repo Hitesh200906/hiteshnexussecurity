@@ -9,14 +9,7 @@ export function Hero() {
   return (
     <section className="relative min-h-[100vh] flex flex-col items-center justify-center overflow-hidden pt-44 pb-20">
       <div className="absolute inset-0 bg-black" />
-      <GlobeAnimation className="absolute inset-0 w-full h-full opacity-80" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_42%,rgba(46,194,179,0.10)_0%,transparent_70%)]" />
-      <div className="absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-          backgroundSize: "200px 200px",
-        }}
-      />
+      <GlobeAnimation className="absolute inset-0 w-full h-full" />
 
       <div className="relative z-10 text-center px-6 w-full max-w-5xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>

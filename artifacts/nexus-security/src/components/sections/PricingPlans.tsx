@@ -164,18 +164,21 @@ export function PricingPlans() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className={`relative flex flex-col rounded-2xl p-8 bg-black transition-all duration-300 ${
                 card.popular
-                  ? "border border-primary/50 shadow-[0_0_50px_-8px_rgba(46,194,179,0.45)] lg:-mt-4 lg:mb-4"
+                  ? "border border-primary/30 lg:-mt-4 lg:mb-4"
                   : isSelected
-                    ? "border border-primary shadow-[0_0_45px_-8px_rgba(46,194,179,0.5)]"
-                    : "border border-primary/15 shadow-[0_0_25px_-8px_rgba(46,194,179,0.2)] hover:border-primary/40 hover:shadow-[0_0_35px_-6px_rgba(46,194,179,0.35)]"
+                    ? "border border-primary"
+                    : "border border-white/10 hover:border-white/20"
               }`}
             >
               {card.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className="px-4 py-1.5 rounded-full bg-primary text-black text-[10px] font-bold tracking-[0.18em] uppercase shadow-[0_0_24px_rgba(46,194,179,0.5)]">
-                    Most Popular
-                  </span>
-                </div>
+                <>
+                  <div className="absolute top-0 left-10 right-10 h-[2px] rounded-full bg-gradient-to-r from-transparent via-primary to-transparent" />
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span className="px-4 py-1.5 rounded-full bg-primary text-black text-[10px] font-bold tracking-[0.18em] uppercase">
+                      Most Popular
+                    </span>
+                  </div>
+                </>
               )}
 
               <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-5">
@@ -205,7 +208,7 @@ export function PricingPlans() {
                 onClick={() => (card.contact ? setLocation("/contact") : handleSelectPlan(planKey))}
                 className={`w-full rounded-full h-12 text-sm font-semibold ${
                   card.popular
-                    ? "bg-white text-black hover:bg-white/90 shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+                    ? "bg-white text-black hover:bg-white/90"
                     : "bg-white/5 border border-white/15 text-foreground hover:bg-white/10 hover:border-white/25"
                 }`}
               >
