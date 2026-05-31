@@ -7,6 +7,21 @@ import { logger } from "./logger";
 const SESSION_COOKIE = "nexus_session";
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// In production the frontend (e.g. Vercel) and API (e.g. Render) live on
+// different domains, so the session cookie must be SameSite=None + Secure to be
+// sent on cross-site requests. In local/dev they are same-origin, so Lax is fine.
+const isCrossSite = process.env.NODE_ENV === "production";
+
+function getCookieOptions(maxAgeMs?: number) {
+  return {
+    httpOnly: true,
+    secure: isCrossSite,
+    sameSite: isCrossSite ? ("none" as const) : ("lax" as const),
+    path: "/",
+    ...(maxAgeMs !== undefined ? { maxAge: maxAgeMs } : {}),
+  };
+}
+
 export async function createSession(userId: number, res: Response): Promise<string> {
   const sessionId = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
@@ -17,12 +32,7 @@ export async function createSession(userId: number, res: Response): Promise<stri
     expiresAt,
   });
 
-  res.cookie(SESSION_COOKIE, sessionId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: SESSION_DURATION_MS,
-  });
+  res.cookie(SESSION_COOKIE, sessionId, getCookieOptions(SESSION_DURATION_MS));
 
   return sessionId;
 }
@@ -62,7 +72,7 @@ export async function destroySession(req: Request, res: Response): Promise<void>
       logger.error({ err }, "Failed to delete session");
     }
   }
-  res.clearCookie(SESSION_COOKIE);
+  res.clearCookie(SESSION_COOKIE, getCookieOptions());
 }
 
 export async function isAdminVerified(req: Request): Promise<boolean> {
