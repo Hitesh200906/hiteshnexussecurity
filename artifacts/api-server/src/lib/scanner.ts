@@ -1,6 +1,7 @@
 import { logger } from "./logger";
 import { db, scanJobsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { finalizeCompletedScan } from "./scan-completion";
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 
@@ -88,6 +89,8 @@ function runMockScan(scanId: string, targetUrl: string, plan: string): void {
         .update(scanJobsTable)
         .set({ status: "completed", reportPath })
         .where(eq(scanJobsTable.externalScanId, scanId));
+
+      await finalizeCompletedScan(job);
 
       logger.info({ scanId, reportPath }, "Mock scan completed");
     } catch (err) {

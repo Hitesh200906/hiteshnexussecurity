@@ -392,6 +392,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/ScanStats"
 
+  /reports:
+    get:
+      operationId: getReports
+      tags: [scans]
+      summary: Get report history for current user
+      responses:
+        "200":
+          description: Report list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/check:
     get:
       operationId: adminCheck
@@ -933,14 +954,47 @@ components:
       properties:
         totalScans:
           type: integer
+        activeScans:
+          type: integer
         completedScans:
+          type: integer
+        reportsAvailable:
           type: integer
         credits:
           type: integer
       required:
         - totalScans
+        - activeScans
         - completedScans
+        - reportsAvailable
         - credits
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+        scanId:
+          type: string
+        userId:
+          type: ["integer", "null"]
+        companyName:
+          type: ["string", "null"]
+        websiteUrl:
+          type: ["string", "null"]
+        plan:
+          type: ["string", "null"]
+        severitySummary:
+          type: ["object", "null"]
+          additionalProperties: true
+        pdfUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - scanId
+        - createdAt
 
     AdminAccess:
       type: object

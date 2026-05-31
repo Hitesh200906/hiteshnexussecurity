@@ -7,16 +7,17 @@ import { logger } from "./logger";
 const SESSION_COOKIE = "nexus_session";
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-// In production the frontend (e.g. Vercel) and API (e.g. Render) live on
-// different domains, so the session cookie must be SameSite=None + Secure to be
-// sent on cross-site requests. In local/dev they are same-origin, so Lax is fine.
-const isCrossSite = process.env.NODE_ENV === "production";
-
+// The app is always served over HTTPS — in production the frontend (e.g. Vercel)
+// and API (e.g. Render) live on different domains, and in dev the Replit preview
+// renders the app inside a cross-site iframe. In both cases the browser only
+// sends/sets the session cookie if it is SameSite=None + Secure; a SameSite=Lax
+// cookie is dropped in the embedded iframe, which manifests as a login loop
+// (the session never persists). So use None+Secure everywhere.
 function getCookieOptions(maxAgeMs?: number) {
   return {
     httpOnly: true,
-    secure: isCrossSite,
-    sameSite: isCrossSite ? ("none" as const) : ("lax" as const),
+    secure: true,
+    sameSite: "none" as const,
     path: "/",
     ...(maxAgeMs !== undefined ? { maxAge: maxAgeMs } : {}),
   };

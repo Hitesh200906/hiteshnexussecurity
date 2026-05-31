@@ -8,6 +8,8 @@
 
 export interface ScanStats {
   totalScans: number;
+  activeScans: number;
   completedScans: number;
+  reportsAvailable: number;
   credits: number;
 }

@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
-import { db, scanJobsTable, usersTable, planConfigTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import {
+  db,
+  scanJobsTable,
+  usersTable,
+  planConfigTable,
+  reportsTable,
+  verificationAttemptsTable,
+} from "@workspace/db";
+import { eq, desc, sql } from "drizzle-orm";
 import { randomBytes, createHash } from "crypto";
 import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
@@ -8,6 +15,7 @@ import { mkdir } from "fs/promises";
 import { getSessionUser } from "../lib/session";
 import { sendEmail, buildScanVerificationEmailHtml } from "../lib/email";
 import { submitToScanner } from "../lib/scanner";
+import { finalizeCompletedScan } from "../lib/scan-completion";
 import { logger } from "../lib/logger";
 import { getAppBaseUrl } from "../lib/base-url";
 import {
@@ -20,18 +28,33 @@ import {
 const router: IRouter = Router();
 const REPORTS_DIR = join(process.cwd(), "reports");
 
+// Credit cost gates access to a plan (deducted from the user's balance). This is
+// the internal entitlement mechanism and is distinct from the rupee price shown
+// to the user.
 const PLAN_CREDIT_DEFAULTS: Record<string, number> = {
   basic: 0,
   advanced: 10,
   protection: 25,
 };
 
+// Per-scan display price in INR (rupees). Admin-editable via plan_config
+// (`price_<plan>` keys); these are the fallbacks when unset.
+const PLAN_PRICE_DEFAULTS: Record<string, number> = {
+  basic: 999,
+  advanced: 2999,
+  protection: 4999,
+};
+
+function getPlanCredits(plan: string): number {
+  return PLAN_CREDIT_DEFAULTS[plan] ?? 0;
+}
+
 async function getPlanPrice(plan: string): Promise<number> {
   const [config] = await db
     .select()
     .from(planConfigTable)
     .where(eq(planConfigTable.key, `price_${plan}`));
-  return config?.value ?? PLAN_CREDIT_DEFAULTS[plan] ?? 0;
+  return config?.value ?? PLAN_PRICE_DEFAULTS[plan] ?? 0;
 }
 
 async function ensureReportsDir(): Promise<void> {
@@ -87,6 +110,50 @@ async function checkCodeOnWebsite(url: string, code: string): Promise<{ found: b
   return { found };
 }
 
+async function fetchHtml(target: string): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const resp = await fetch(target, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 NexusSecurity-Ownership-Verifier/2.0",
+        "Accept": "text/html,application/xhtml+xml,*/*",
+      },
+      redirect: "follow",
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return "";
+    return await resp.text();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Business-email verification: crawl the homepage plus common contact/about
+ * pages (the footer lives in the homepage HTML) and check the business email
+ * is publicly listed on the domain.
+ */
+async function checkEmailOnWebsite(url: string, email: string): Promise<boolean> {
+  let base = url.trim();
+  if (!base.startsWith("http://") && !base.startsWith("https://")) {
+    base = "https://" + base;
+  }
+  base = base.replace(/\/+$/, "");
+
+  const paths = ["/", "/contact", "/contact-us", "/about", "/about-us"];
+  const target = email.trim().toLowerCase();
+
+  for (const path of paths) {
+    const html = (await fetchHtml(base + path)).toLowerCase();
+    if (html && html.includes(target)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 router.get("/plan-prices", async (_req, res): Promise<void> => {
   const basic = await getPlanPrice("basic");
   const advanced = await getPlanPrice("advanced");
@@ -102,7 +169,7 @@ router.post("/request-scan", async (req, res): Promise<void> => {
   }
 
   const data = parsed.data;
-  const creditCost = await getPlanPrice(data.plan);
+  const creditCost = getPlanCredits(data.plan);
   const sessionResult = await getSessionUser(req);
 
   if (creditCost > 0) {
@@ -116,16 +183,28 @@ router.post("/request-scan", async (req, res): Promise<void> => {
     }
   }
 
+  // Method 1 — Business Email Verification: confirm the business email is
+  // publicly listed on the domain (homepage / contact / about / footer) before
+  // creating the scan, so we never email a code to an unaffiliated address.
+  if (data.verificationMethod === "email") {
+    const emailFound = await checkEmailOnWebsite(data.websiteUrl, data.email);
+    if (!emailFound) {
+      res.status(400).json({
+        error:
+          "The provided business email address was not found on the website. Please use an email address that is publicly associated with the domain.",
+      });
+      return;
+    }
+  }
+
   const jobId = randomBytes(8).toString("hex");
   let verificationCode: string | null = null;
   let verificationId: string | null = null;
 
   if (data.verificationMethod === "manual") {
-    // Generate clean 6-char alphanumeric code (no ambiguous chars: O, 0, I, 1)
-    const safeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    verificationCode = Array.from({ length: 6 }, () =>
-      safeChars[Math.floor(Math.random() * safeChars.length)]
-    ).join("");
+    // Generate NX-prefixed 6-digit code (matches spec example NX-483721)
+    const digits = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join("");
+    verificationCode = `NX-${digits}`;
     verificationId = randomBytes(16).toString("hex");
   }
 
@@ -152,10 +231,24 @@ router.post("/request-scan", async (req, res): Promise<void> => {
     verificationId,
   });
 
-  if (creditCost > 0 && sessionResult) {
+  // Record the ownership-verification attempt for this scan.
+  await db.insert(verificationAttemptsTable).values({
+    id: randomBytes(12).toString("hex"),
+    scanId: jobId,
+    userId: sessionResult?.user.id ?? null,
+    method: data.verificationMethod,
+    code: verificationCode,
+    status: "pending",
+  });
+
+  if (sessionResult) {
     await db
       .update(usersTable)
-      .set({ credits: sessionResult.user.credits - creditCost })
+      .set({
+        credits: creditCost > 0 ? sessionResult.user.credits - creditCost : sessionResult.user.credits,
+        scansUsed: sql`${usersTable.scansUsed} + 1`,
+        currentPlan: data.plan,
+      })
       .where(eq(usersTable.id, sessionResult.user.id));
   }
 
@@ -211,6 +304,11 @@ router.get("/verify-scan/:jobId", async (req, res): Promise<void> => {
     .set({ status: "queued" })
     .where(eq(scanJobsTable.id, raw));
 
+  await db
+    .update(verificationAttemptsTable)
+    .set({ status: "success", detail: "Email ownership link confirmed" })
+    .where(eq(verificationAttemptsTable.scanId, job.id));
+
   // Submit to scanner
   await submitToScanner(job.externalScanId!, job.websiteUrl, job.plan, job.businessEmail);
 
@@ -260,6 +358,10 @@ router.post("/verify-code", async (req, res): Promise<void> => {
   const result = await checkCodeOnWebsite(targetUrl, job.verificationCode);
 
   if (!result.found) {
+    await db
+      .update(verificationAttemptsTable)
+      .set({ status: "failed", detail: result.error ?? "Code not found on website" })
+      .where(eq(verificationAttemptsTable.scanId, job.id));
     res.status(400).json({
       error: result.error || `Code "${job.verificationCode}" not found on ${targetUrl}. Paste it anywhere in your page HTML (meta tag, footer div, or hidden element) and try again.`,
     });
@@ -270,6 +372,11 @@ router.post("/verify-code", async (req, res): Promise<void> => {
     .update(scanJobsTable)
     .set({ status: "queued", websiteUrl: websiteUrl || job.websiteUrl })
     .where(eq(scanJobsTable.verificationId, verificationId));
+
+  await db
+    .update(verificationAttemptsTable)
+    .set({ status: "success", detail: "Manual code found on website" })
+    .where(eq(verificationAttemptsTable.scanId, job.id));
 
   // Submit to scanner asynchronously
   submitToScanner(job.externalScanId!, job.websiteUrl, job.plan, job.businessEmail).catch((err) =>
@@ -332,6 +439,7 @@ router.post("/scan-callback", async (req, res): Promise<void> => {
         .set({ status: "completed", reportUrl: reportUrl ?? null })
         .where(eq(scanJobsTable.id, job.id));
     }
+    await finalizeCompletedScan(job, { reportUrl });
   } else if (status === "failed") {
     await db
       .update(scanJobsTable)
@@ -374,10 +482,12 @@ router.get("/scans", async (req, res): Promise<void> => {
   );
 });
 
+const TERMINAL_STATUSES = new Set(["completed", "failed"]);
+
 router.get("/scans/stats", async (req, res): Promise<void> => {
   const sessionResult = await getSessionUser(req);
   if (!sessionResult) {
-    res.json({ totalScans: 0, completedScans: 0, credits: 0 });
+    res.json({ totalScans: 0, activeScans: 0, completedScans: 0, reportsAvailable: 0, credits: 0 });
     return;
   }
 
@@ -386,11 +496,57 @@ router.get("/scans/stats", async (req, res): Promise<void> => {
     .from(scanJobsTable)
     .where(eq(scanJobsTable.userId, sessionResult.user.id));
 
+  const reportRows = await db
+    .select({ id: reportsTable.id })
+    .from(reportsTable)
+    .where(eq(reportsTable.userId, sessionResult.user.id));
+
   res.json({
     totalScans: allJobs.length,
+    activeScans: allJobs.filter((j) => !TERMINAL_STATUSES.has(j.status)).length,
     completedScans: allJobs.filter((j) => j.status === "completed").length,
+    reportsAvailable: reportRows.length,
     credits: sessionResult.user.credits,
   });
+});
+
+router.get("/reports", async (req, res): Promise<void> => {
+  const sessionResult = await getSessionUser(req);
+  if (!sessionResult) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  const rows = await db
+    .select({
+      id: reportsTable.id,
+      scanId: reportsTable.scanId,
+      userId: reportsTable.userId,
+      severitySummary: reportsTable.severitySummary,
+      pdfUrl: reportsTable.pdfUrl,
+      createdAt: reportsTable.createdAt,
+      companyName: scanJobsTable.companyName,
+      websiteUrl: scanJobsTable.websiteUrl,
+      plan: scanJobsTable.plan,
+    })
+    .from(reportsTable)
+    .leftJoin(scanJobsTable, eq(reportsTable.scanId, scanJobsTable.id))
+    .where(eq(reportsTable.userId, sessionResult.user.id))
+    .orderBy(desc(reportsTable.createdAt));
+
+  res.json(
+    rows.map((r) => ({
+      id: r.id,
+      scanId: r.scanId,
+      userId: r.userId,
+      companyName: r.companyName,
+      websiteUrl: r.websiteUrl,
+      plan: r.plan,
+      severitySummary: r.severitySummary,
+      pdfUrl: r.pdfUrl,
+      createdAt: r.createdAt.toISOString(),
+    }))
+  );
 });
 
 router.get("/scans/:jobId", async (req, res): Promise<void> => {

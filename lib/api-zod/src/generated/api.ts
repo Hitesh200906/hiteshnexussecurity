@@ -245,9 +245,28 @@ export const GetScanResponse = zod.object({
  */
 export const GetScanStatsResponse = zod.object({
   "totalScans": zod.number(),
+  "activeScans": zod.number(),
   "completedScans": zod.number(),
+  "reportsAvailable": zod.number(),
   "credits": zod.number()
 })
+
+
+/**
+ * @summary Get report history for current user
+ */
+export const GetReportsResponseItem = zod.object({
+  "id": zod.string(),
+  "scanId": zod.string(),
+  "userId": zod.number().nullish(),
+  "companyName": zod.string().nullish(),
+  "websiteUrl": zod.string().nullish(),
+  "plan": zod.string().nullish(),
+  "severitySummary": zod.record(zod.string(), zod.unknown()).nullish(),
+  "pdfUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const GetReportsResponse = zod.array(GetReportsResponseItem)
 
 
 /**

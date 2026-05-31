@@ -24,6 +24,8 @@ export * from './passkeyOptions';
 export * from './planPrices';
 export * from './planPricesInput';
 export * from './registerInput';
+export * from './report';
+export * from './reportSeveritySummary';
 export * from './resendVerificationInput';
 export * from './resetPasswordInput';
 export * from './scanCallbackInput';

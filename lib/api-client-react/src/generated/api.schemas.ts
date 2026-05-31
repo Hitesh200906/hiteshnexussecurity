@@ -161,8 +161,33 @@ export interface ScanJob {
 
 export interface ScanStats {
   totalScans: number;
+  activeScans: number;
   completedScans: number;
+  reportsAvailable: number;
   credits: number;
+}
+
+/**
+ * @nullable
+ */
+export type ReportSeveritySummary = { [key: string]: unknown } | null;
+
+export interface Report {
+  id: string;
+  scanId: string;
+  /** @nullable */
+  userId?: number | null;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  websiteUrl?: string | null;
+  /** @nullable */
+  plan?: string | null;
+  /** @nullable */
+  severitySummary?: ReportSeveritySummary;
+  /** @nullable */
+  pdfUrl?: string | null;
+  createdAt: string;
 }
 
 export interface AdminAccess {

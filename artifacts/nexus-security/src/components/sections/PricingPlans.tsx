@@ -48,22 +48,40 @@ const PLAN_CARDS: Record<ScanRequestPlan, PlanCard> = {
   },
   advanced: {
     name: "Professional",
-    price: "₹4,999",
-    period: "/month",
-    description: "Everything growing teams need to stay continuously protected.",
-    features: ["Full Security Audit", "Priority Reports", "AI Recommendations", "API Analysis"],
-    cta: "Most Popular",
+    price: "₹2,999",
+    period: "/scan",
+    description: "Everything growing teams need for a thorough security audit.",
+    features: [
+      "Bug Detector",
+      "Full Security Audit",
+      "Priority Reports",
+      "Advanced Scan",
+      "PDF Report",
+      "Email Support",
+    ],
+    cta: "Get Started",
     popular: true,
   },
   protection: {
     name: "Enterprise",
-    price: "Custom",
-    description: "Dedicated coverage for regulated environments and large estates.",
-    features: ["Dedicated Security Team", "Continuous Monitoring", "Compliance Reports", "Custom Integrations"],
-    cta: "Contact Sales",
-    contact: true,
+    price: "₹4,999",
+    period: "/scan",
+    description: "Deep, page-by-page coverage for large or regulated estates.",
+    features: [
+      "Deep Scan Of Every Page",
+      "Vulnerability Location Detection",
+      "Bug Detector",
+      "Full Security Audit",
+      "Priority Reports",
+      "Advanced Scan",
+      "PDF Report",
+      "Email Support",
+    ],
+    cta: "Get Started",
   },
 };
+
+const HIGHLIGHTED_FEATURES = new Set(["Bug Detector"]);
 
 export function PricingPlans() {
   const { data: plans } = useGetPlanPrices();
@@ -144,7 +162,7 @@ export function PricingPlans() {
     }
   };
 
-  const FALLBACK_PRICES: Record<ScanRequestPlan, number> = { basic: 0, advanced: 10, protection: 25 };
+  const FALLBACK_PRICES: Record<ScanRequestPlan, number> = { basic: 999, advanced: 2999, protection: 4999 };
   const planPrice = (plan: ScanRequestPlan): number =>
     plans ? (plans as Record<ScanRequestPlan, number>)[plan] : FALLBACK_PRICES[plan];
 
@@ -198,7 +216,14 @@ export function PricingPlans() {
                 {card.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-3 text-sm text-foreground/90">
                     <Check className="w-4 h-4 shrink-0 text-primary" strokeWidth={2.5} />
-                    {feature}
+                    <span className="flex items-center gap-2">
+                      {feature}
+                      {HIGHLIGHTED_FEATURES.has(feature) && (
+                        <span className="px-2 py-0.5 rounded-full bg-primary/15 border border-primary/30 text-primary text-[10px] font-semibold uppercase tracking-wider">
+                          Pro
+                        </span>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -239,7 +264,7 @@ export function PricingPlans() {
                   <div>
                     <h3 className="text-xl font-bold text-foreground">Scan Request</h3>
                     <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-[0.2em]">
-                      Plan: {PLAN_CARDS[selectedPlan].name} — {planPrice(selectedPlan)} credits
+                      Plan: {PLAN_CARDS[selectedPlan].name} — ₹{planPrice(selectedPlan).toLocaleString("en-IN")} / scan
                     </p>
                   </div>
                 </div>
@@ -278,9 +303,12 @@ export function PricingPlans() {
                     </div>
 
                     <div className="pt-5 border-t border-white/8">
-                      <Label className="mb-4 block text-base font-semibold text-foreground">Ownership Verification</Label>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        We need to confirm you own the domain before scanning it.
+                      <Label className="mb-2 block text-base font-semibold text-foreground">Website Ownership Verification</Label>
+                      <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                        To ensure that only legitimate website owners can perform security scans, Nexus Security requires
+                        ownership verification before every scan. You can verify ownership using either your business email
+                        address or a verification code placed on your website. Verification is only required before a scan
+                        begins and helps prevent unauthorized scanning of third-party websites.
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Card
@@ -297,10 +325,11 @@ export function PricingPlans() {
                             </div>
                             <div>
                               <div className="font-semibold flex items-center gap-2 text-sm">
-                                <FileText className="w-4 h-4 text-primary" /> Email Verification
+                                <FileText className="w-4 h-4 text-primary" /> Business Email Verification
                               </div>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                We send a confirmation link to your business email. Click it to confirm domain ownership and queue the scan.
+                                We crawl your homepage, contact, about and footer pages to confirm your business email is
+                                publicly listed on the domain, then email you a verification code to confirm ownership.
                               </p>
                             </div>
                           </div>
@@ -319,10 +348,11 @@ export function PricingPlans() {
                             </div>
                             <div>
                               <div className="font-semibold flex items-center gap-2 text-sm">
-                                <Code className="w-4 h-4 text-primary" /> Manual Code
+                                <Code className="w-4 h-4 text-primary" /> Manual Website Verification
                               </div>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                We generate a 6-character code. Paste it anywhere on your site (footer, meta tag, hidden div). Our AI crawls your site to verify it's there.
+                                We generate a unique code (e.g. NX-483721). Place it anywhere on your site — footer, homepage,
+                                or HTML source — then click verify and our AI crawler confirms it's present.
                               </p>
                             </div>
                           </div>

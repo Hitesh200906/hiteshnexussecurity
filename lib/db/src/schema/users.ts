@@ -20,6 +20,10 @@ export const usersTable = pgTable("users", {
   resetCode: text("reset_code"),
   resetExpiry: timestamp("reset_expiry", { withTimezone: true }),
   passkeyCredentialId: text("passkey_credential_id"),
+  // Scan usage stats surfaced on the dashboard/profile.
+  scansUsed: integer("scans_used").notNull().default(0),
+  scansCompleted: integer("scans_completed").notNull().default(0),
+  currentPlan: text("current_plan"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
