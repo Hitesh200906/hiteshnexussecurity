@@ -117,11 +117,18 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     });
   }
 
-  await sendEmail(
+  const sent = await sendEmail(
     normalizedEmail,
     "Verify your Nexus Security account",
     buildVerificationEmailHtml(code, trimmedName),
   );
+  if (!sent) {
+    logger.error({ email: normalizedEmail }, "Failed to send verification email");
+    res.status(502).json({
+      error: "We couldn't send your verification code right now. Please try again in a moment.",
+    });
+    return;
+  }
 
   logger.info({ email: normalizedEmail }, "Email verification code sent");
   res.json({
