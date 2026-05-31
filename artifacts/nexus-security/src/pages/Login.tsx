@@ -24,6 +24,11 @@ export default function Login() {
       toast({ title: "Welcome back", description: "Signed in successfully." });
       setLocation("/dashboard");
     } catch (error: any) {
+      if (error?.data?.needsVerification) {
+        toast({ title: "Verify your email", description: "Enter the code we sent to finish signing in." });
+        setLocation(`/verify-email?email=${encodeURIComponent(error?.data?.email || email)}`);
+        return;
+      }
       const msg = error?.data?.error || error?.message || "Invalid email or password.";
       toast({ title: "Sign in failed", description: msg, variant: "destructive" });
     }

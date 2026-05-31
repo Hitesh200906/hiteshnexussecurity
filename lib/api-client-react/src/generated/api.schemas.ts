@@ -61,12 +61,17 @@ export interface ChangePasswordInput {
   newPassword: string;
 }
 
-export interface ResetRequestInput {
+export interface ResendVerificationInput {
+  email: string;
+}
+
+export interface ForgotPasswordInput {
   email: string;
 }
 
 export interface ResetPasswordInput {
-  token: string;
+  email: string;
+  code: string;
   newPassword: string;
 }
 

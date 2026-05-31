@@ -86,6 +86,46 @@ export function buildVerificationEmailHtml(code: string, name: string): string {
 </html>`;
 }
 
+export function buildPasswordResetCodeEmailHtml(code: string, name: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; background: #0a0a0f; color: #f8fafc; margin: 0; padding: 0; }
+    .wrap { max-width: 600px; margin: 40px auto; padding: 0 16px; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 40px; }
+    .logo { color: #2f9b9b; font-size: 22px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 24px; }
+    h2 { color: #f8fafc; font-size: 20px; margin: 0 0 8px; }
+    p { color: #94a3b8; line-height: 1.6; margin: 0 0 16px; }
+    .code-box { background: #0a0a0f; border: 1px solid #2f9b9b; border-radius: 10px; padding: 24px; text-align: center; margin: 28px 0; }
+    .code { font-size: 44px; font-weight: bold; letter-spacing: 14px; color: #2f9b9b; font-family: 'Courier New', monospace; }
+    .expires { color: #475569; font-size: 13px; margin-top: 8px; }
+    .divider { border: none; border-top: 1px solid #1e293b; margin: 28px 0; }
+    .footer { color: #475569; font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="logo">Nexus Security</div>
+      <h2>Reset your password</h2>
+      <p>Hello ${name},</p>
+      <p>We received a request to reset your Nexus Security password. Enter the code below to choose a new password:</p>
+      <div class="code-box">
+        <div class="code">${code}</div>
+        <div class="expires">Expires in 15 minutes</div>
+      </div>
+      <p>If you did not request a password reset, you can safely ignore this email — your password will not change.</p>
+      <hr class="divider">
+      <div class="footer">&copy; 2026 Nexus Security. All rights reserved.</div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export function buildPasswordResetEmailHtml(resetLink: string, name: string): string {
   return `<!DOCTYPE html>
 <html>

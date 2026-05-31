@@ -113,22 +113,35 @@ export const ChangePasswordResponse = zod.object({
 
 
 /**
- * @summary Request a password reset link by email
+ * @summary Resend the 6-digit email verification code
  */
-export const RequestPasswordResetBody = zod.object({
+export const ResendVerificationBody = zod.object({
   "email": zod.string()
 })
 
-export const RequestPasswordResetResponse = zod.object({
+export const ResendVerificationResponse = zod.object({
   "message": zod.string()
 })
 
 
 /**
- * @summary Set a new password using a reset token
+ * @summary Send a 6-digit password reset code by email
+ */
+export const ForgotPasswordBody = zod.object({
+  "email": zod.string()
+})
+
+export const ForgotPasswordResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Set a new password using an emailed reset code
  */
 export const ResetPasswordBody = zod.object({
-  "token": zod.string(),
+  "email": zod.string(),
+  "code": zod.string(),
   "newPassword": zod.string()
 })
 

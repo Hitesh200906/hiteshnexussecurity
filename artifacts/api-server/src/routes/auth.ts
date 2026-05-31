@@ -1,55 +1,52 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { createHash, randomBytes } from "crypto";
+import { randomInt } from "crypto";
 import { createSession, getSessionUser, destroySession } from "../lib/session";
-import { sendEmail, buildVerificationEmailHtml, buildPasswordResetEmailHtml } from "../lib/email";
+import {
+  sendEmail,
+  buildVerificationEmailHtml,
+  buildPasswordResetCodeEmailHtml,
+} from "../lib/email";
+import { hashPassword, verifyPassword } from "../lib/password";
 import { logger } from "../lib/logger";
-import { getAppBaseUrl } from "../lib/base-url";
 import {
   LoginBody,
   SignupBody,
   RegisterBody,
   VerifyEmailBody,
   ChangePasswordBody,
-  RequestPasswordResetBody,
+  ResendVerificationBody,
+  ForgotPasswordBody,
   ResetPasswordBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-function hashPassword(password: string): string {
-  const salt = "nexus_salt_2026";
-  return createHash("sha256")
-    .update(password + salt)
-    .digest("hex");
+const CODE_TTL_MS = 15 * 60 * 1000; // verification & reset codes expire in 15 min
+
+function generateCode(): string {
+  // Cryptographically secure 6-digit code (100000-999999).
+  return String(randomInt(100000, 1000000));
 }
 
-// In-memory store for pending email verifications
-// { email -> { code, name, passwordHash, expiresAt } }
-const pendingVerifications = new Map<
-  string,
-  { code: string; name: string; passwordHash: string; expiresAt: number }
->();
-
-// In-memory store for pending password resets
-// { token -> { userId, expiresAt } }
-const pendingResets = new Map<string, { userId: number; expiresAt: number }>();
-
-// Clean up expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [email, entry] of pendingVerifications.entries()) {
-    if (entry.expiresAt < now) {
-      pendingVerifications.delete(email);
-    }
-  }
-  for (const [token, entry] of pendingResets.entries()) {
-    if (entry.expiresAt < now) {
-      pendingResets.delete(token);
-    }
-  }
-}, 5 * 60 * 1000);
+function publicUser(user: {
+  id: number;
+  name: string;
+  email: string;
+  credits: number;
+  isAdmin: boolean;
+  createdAt: Date;
+}) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    credits: user.credits,
+    isAdmin: user.isAdmin,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
 
 router.get("/status", async (req, res): Promise<void> => {
   const result = await getSessionUser(req);
@@ -57,21 +54,12 @@ router.get("/status", async (req, res): Promise<void> => {
     res.json({ loggedIn: false });
     return;
   }
-  const { user } = result;
-  res.json({
-    loggedIn: true,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      credits: user.credits,
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt.toISOString(),
-    },
-  });
+  res.json({ loggedIn: true, user: publicUser(result.user) });
 });
 
-// Step 1: Pre-signup — validate, check duplicate, send 6-digit code
+// Step 1: Sign up — create (or refresh) a pending, unverified user row and
+// email a 6-digit verification code. No active account exists until the code
+// is confirmed (is_verified stays false).
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
@@ -91,39 +79,57 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    res.status(400).json({ error: "Name is required" });
+    return;
+  }
 
-  const existing = await db
+  const [existing] = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, normalizedEmail));
 
-  if (existing.length > 0) {
+  if (existing && existing.isVerified) {
     res.status(409).json({ error: "An account with this email already exists" });
     return;
   }
 
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const passwordHash = hashPassword(password);
+  const code = generateCode();
+  const verificationExpiry = new Date(Date.now() + CODE_TTL_MS);
+  const passwordHash = await hashPassword(password);
 
-  pendingVerifications.set(normalizedEmail, {
-    code,
-    name: name.trim(),
-    passwordHash,
-    expiresAt: Date.now() + 15 * 60 * 1000, // 15 minutes
-  });
+  if (existing) {
+    // Unverified row already exists — refresh its details and resend a code.
+    await db
+      .update(usersTable)
+      .set({ name: trimmedName, passwordHash, verificationCode: code, verificationExpiry })
+      .where(eq(usersTable.id, existing.id));
+  } else {
+    await db.insert(usersTable).values({
+      name: trimmedName,
+      email: normalizedEmail,
+      passwordHash,
+      credits: 5,
+      isVerified: false,
+      verificationCode: code,
+      verificationExpiry,
+    });
+  }
 
   await sendEmail(
     normalizedEmail,
     "Verify your Nexus Security account",
-    buildVerificationEmailHtml(code, name.trim())
+    buildVerificationEmailHtml(code, trimmedName),
   );
 
   logger.info({ email: normalizedEmail }, "Email verification code sent");
-
-  res.json({ message: "Verification code sent to your email. Please enter it to complete registration." });
+  res.json({
+    message: "Verification code sent to your email. Please enter it to complete registration.",
+  });
 });
 
-// Step 2: Verify email code and create account
+// Step 2: Confirm the 6-digit code, mark the account verified, start a session.
 router.post("/auth/verify-email", async (req, res): Promise<void> => {
   const parsed = VerifyEmailBody.safeParse(req.body);
   if (!parsed.success) {
@@ -134,64 +140,82 @@ router.post("/auth/verify-email", async (req, res): Promise<void> => {
   const { email, code } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
 
-  const pending = pendingVerifications.get(normalizedEmail);
-  if (!pending) {
-    res.status(400).json({ error: "No pending verification for this email. Please register again." });
-    return;
-  }
-
-  if (Date.now() > pending.expiresAt) {
-    pendingVerifications.delete(normalizedEmail);
-    res.status(400).json({ error: "Verification code expired. Please register again." });
-    return;
-  }
-
-  if (code.trim() !== pending.code) {
-    res.status(400).json({ error: "Invalid verification code. Please try again." });
-    return;
-  }
-
-  pendingVerifications.delete(normalizedEmail);
-
-  // Double-check no account was created in the meantime
-  const existing = await db
+  const [user] = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, normalizedEmail));
 
-  if (existing.length > 0) {
-    res.status(409).json({ error: "An account with this email already exists" });
+  if (!user) {
+    res.status(400).json({ error: "No pending registration for this email. Please sign up again." });
+    return;
+  }
+  if (user.isVerified) {
+    res.status(400).json({ error: "This account is already verified. Please sign in." });
+    return;
+  }
+  if (!user.verificationCode || !user.verificationExpiry || user.verificationExpiry.getTime() < Date.now()) {
+    res.status(400).json({ error: "Verification code expired. Please request a new one." });
+    return;
+  }
+  if (code.trim() !== user.verificationCode) {
+    res.status(400).json({ error: "Invalid verification code. Please try again." });
     return;
   }
 
-  const [user] = await db
-    .insert(usersTable)
-    .values({
-      name: pending.name,
-      email: normalizedEmail,
-      passwordHash: pending.passwordHash,
-      credits: 5,
-    })
+  const [updated] = await db
+    .update(usersTable)
+    .set({ isVerified: true, verificationCode: null, verificationExpiry: null })
+    .where(eq(usersTable.id, user.id))
     .returning();
 
-  await createSession(user.id, res);
+  await createSession(updated.id, res);
 
-  logger.info({ userId: user.id, email: normalizedEmail }, "New user created via email verification");
-
+  logger.info({ userId: updated.id, email: normalizedEmail }, "User verified email and signed in");
   res.status(201).json({
     message: "Account created successfully. Welcome to Nexus Security.",
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      credits: user.credits,
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt.toISOString(),
-    },
+    user: publicUser(updated),
   });
 });
 
-// Direct signup (no email verification — kept for backwards compatibility / testing)
+// Resend the verification code for a pending account. Responds generically to
+// avoid leaking which emails have a pending registration.
+router.post("/auth/resend-verification", async (req, res): Promise<void> => {
+  const parsed = ResendVerificationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const normalizedEmail = parsed.data.email.toLowerCase().trim();
+  const generic = { message: "If a pending account exists for that email, a new code has been sent." };
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, normalizedEmail));
+
+  if (!user || user.isVerified) {
+    res.json(generic);
+    return;
+  }
+
+  const code = generateCode();
+  await db
+    .update(usersTable)
+    .set({ verificationCode: code, verificationExpiry: new Date(Date.now() + CODE_TTL_MS) })
+    .where(eq(usersTable.id, user.id));
+
+  await sendEmail(
+    normalizedEmail,
+    "Verify your Nexus Security account",
+    buildVerificationEmailHtml(code, user.name),
+  );
+
+  logger.info({ email: normalizedEmail }, "Verification code resent");
+  res.json(generic);
+});
+
+// Direct signup with no email verification (kept for testing/admin tooling).
 router.post("/auth/signup", async (req, res): Promise<void> => {
   const parsed = SignupBody.safeParse(req.body);
   if (!parsed.success) {
@@ -211,41 +235,24 @@ router.post("/auth/signup", async (req, res): Promise<void> => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
-  const existing = await db
+  const [existing] = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, normalizedEmail));
 
-  if (existing.length > 0) {
+  if (existing) {
     res.status(409).json({ error: "An account with this email already exists" });
     return;
   }
 
-  const passwordHash = hashPassword(password);
-
+  const passwordHash = await hashPassword(password);
   const [user] = await db
     .insert(usersTable)
-    .values({
-      name: name.trim(),
-      email: normalizedEmail,
-      passwordHash,
-      credits: 5,
-    })
+    .values({ name: name.trim(), email: normalizedEmail, passwordHash, credits: 5, isVerified: true })
     .returning();
 
   await createSession(user.id, res);
-
-  res.status(201).json({
-    message: "Account created successfully",
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      credits: user.credits,
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt.toISOString(),
-    },
-  });
+  res.status(201).json({ message: "Account created successfully", user: publicUser(user) });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -256,31 +263,36 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const { email, password } = parsed.data;
-  const hash = hashPassword(password);
+  const normalizedEmail = email.toLowerCase().trim();
 
   const [user] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.email, email.toLowerCase().trim()));
+    .where(eq(usersTable.email, normalizedEmail));
 
-  if (!user || user.passwordHash !== hash) {
+  const { ok, needsRehash } = await verifyPassword(password, user?.passwordHash);
+  if (!user || !ok) {
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
 
-  await createSession(user.id, res);
-
-  res.json({
-    message: "Login successful",
-    user: {
-      id: user.id,
-      name: user.name,
+  if (!user.isVerified) {
+    res.status(403).json({
+      error: "Please verify your email before signing in.",
+      needsVerification: true,
       email: user.email,
-      credits: user.credits,
-      isAdmin: user.isAdmin,
-      createdAt: user.createdAt.toISOString(),
-    },
-  });
+    });
+    return;
+  }
+
+  // Transparently upgrade legacy SHA-256 hashes to bcrypt on successful login.
+  if (needsRehash) {
+    const upgraded = await hashPassword(password);
+    await db.update(usersTable).set({ passwordHash: upgraded }).where(eq(usersTable.id, user.id));
+  }
+
+  await createSession(user.id, res);
+  res.json({ message: "Login successful", user: publicUser(user) });
 });
 
 router.post("/auth/logout", async (req, res): Promise<void> => {
@@ -303,11 +315,11 @@ router.post("/auth/change-password", async (req, res): Promise<void> => {
 
   const { currentPassword, newPassword } = parsed.data;
 
-  if (hashPassword(currentPassword) !== result.user.passwordHash) {
+  const { ok } = await verifyPassword(currentPassword, result.user.passwordHash);
+  if (!ok) {
     res.status(401).json({ error: "Current password is incorrect" });
     return;
   }
-
   if (newPassword.length < 6) {
     res.status(400).json({ error: "New password must be at least 6 characters" });
     return;
@@ -315,60 +327,57 @@ router.post("/auth/change-password", async (req, res): Promise<void> => {
 
   await db
     .update(usersTable)
-    .set({ passwordHash: hashPassword(newPassword) })
+    .set({ passwordHash: await hashPassword(newPassword) })
     .where(eq(usersTable.id, result.user.id));
 
   logger.info({ userId: result.user.id }, "User changed password");
-
   res.json({ message: "Password updated successfully" });
 });
 
-// Request a password reset link
-router.post("/auth/request-password-reset", async (req, res): Promise<void> => {
-  const parsed = RequestPasswordResetBody.safeParse(req.body);
+// Forgot password — email a 6-digit reset code. Responds generically to avoid
+// leaking which emails are registered.
+router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+  const parsed = ForgotPasswordBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
   const normalizedEmail = parsed.data.email.toLowerCase().trim();
-  const genericMessage =
-    "If an account exists for that email, a password reset link has been sent.";
+  const generic = {
+    message: "If an account exists for that email, a password reset code has been sent.",
+  };
 
   const [user] = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, normalizedEmail));
 
-  // Always respond the same way to avoid leaking which emails are registered
   if (!user) {
     logger.info({ email: normalizedEmail }, "Password reset requested for unknown email");
-    res.json({ message: genericMessage });
+    res.json(generic);
     return;
   }
 
-  const token = randomBytes(32).toString("hex");
-  pendingResets.set(token, {
-    userId: user.id,
-    expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutes
-  });
+  const code = generateCode();
+  await db
+    .update(usersTable)
+    .set({ resetCode: code, resetExpiry: new Date(Date.now() + CODE_TTL_MS) })
+    .where(eq(usersTable.id, user.id));
 
-  const resetLink = `${getAppBaseUrl()}/reset-password?token=${token}`;
-
-  // Send the email without blocking the response so that the request latency
-  // is the same whether or not the email exists (avoids an enumeration oracle).
+  // Send without blocking so latency is identical whether or not the email exists.
   void sendEmail(
     normalizedEmail,
     "Reset your Nexus Security password",
-    buildPasswordResetEmailHtml(resetLink, user.name)
+    buildPasswordResetCodeEmailHtml(code, user.name),
   )
-    .then(() => logger.info({ userId: user.id }, "Password reset link sent"))
+    .then(() => logger.info({ userId: user.id }, "Password reset code sent"))
     .catch((err) => logger.error({ err, userId: user.id }, "Failed to send password reset email"));
 
-  res.json({ message: genericMessage });
+  res.json(generic);
 });
 
-// Complete a password reset using a token
+// Complete a password reset using the emailed 6-digit code.
 router.post("/auth/reset-password", async (req, res): Promise<void> => {
   const parsed = ResetPasswordBody.safeParse(req.body);
   if (!parsed.success) {
@@ -376,28 +385,40 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     return;
   }
 
-  const { token, newPassword } = parsed.data;
+  const { email, code, newPassword } = parsed.data;
 
   if (newPassword.length < 6) {
     res.status(400).json({ error: "New password must be at least 6 characters" });
     return;
   }
 
-  const pending = pendingResets.get(token);
-  if (!pending || pending.expiresAt < Date.now()) {
-    pendingResets.delete(token);
-    res.status(400).json({ error: "This reset link is invalid or has expired. Please request a new one." });
+  const normalizedEmail = email.toLowerCase().trim();
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, normalizedEmail));
+
+  if (!user || !user.resetCode || !user.resetExpiry || user.resetExpiry.getTime() < Date.now()) {
+    res.status(400).json({ error: "This reset code is invalid or has expired. Please request a new one." });
+    return;
+  }
+  if (code.trim() !== user.resetCode) {
+    res.status(400).json({ error: "Invalid reset code. Please try again." });
     return;
   }
 
-  pendingResets.delete(token);
-
   await db
     .update(usersTable)
-    .set({ passwordHash: hashPassword(newPassword) })
-    .where(eq(usersTable.id, pending.userId));
+    .set({
+      passwordHash: await hashPassword(newPassword),
+      resetCode: null,
+      resetExpiry: null,
+      // A successful reset proves the user controls the inbox.
+      isVerified: true,
+    })
+    .where(eq(usersTable.id, user.id));
 
-  logger.info({ userId: pending.userId }, "Password reset completed");
+  logger.info({ userId: user.id }, "Password reset completed");
   res.json({ message: "Your password has been reset. You can now sign in with your new password." });
 });
 

@@ -10,6 +10,15 @@ export const usersTable = pgTable("users", {
   googleId: text("google_id"),
   credits: integer("credits").notNull().default(0),
   isAdmin: boolean("is_admin").notNull().default(false),
+  // Email verification. Defaults to true so pre-existing accounts keep working
+  // when this column is added; new sign-ups are explicitly inserted as false
+  // and flipped to true once the emailed code is confirmed.
+  isVerified: boolean("is_verified").notNull().default(true),
+  verificationCode: text("verification_code"),
+  verificationExpiry: timestamp("verification_expiry", { withTimezone: true }),
+  // Password reset via emailed 6-digit code.
+  resetCode: text("reset_code"),
+  resetExpiry: timestamp("reset_expiry", { withTimezone: true }),
   passkeyCredentialId: text("passkey_credential_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

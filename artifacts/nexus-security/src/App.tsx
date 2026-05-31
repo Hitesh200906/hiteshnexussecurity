@@ -10,6 +10,7 @@ import Reports from "@/pages/Reports";
 import Contact from "@/pages/Contact";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import VerifyEmail from "@/pages/VerifyEmail";
 import ResetPassword from "@/pages/ResetPassword";
 import Profile from "@/pages/Profile";
 import Dashboard from "@/pages/Dashboard";
@@ -39,6 +40,7 @@ function Router() {
           <Route path="/contact" component={Contact} />
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
+          <Route path="/verify-email" component={VerifyEmail} />
           <Route path="/reset-password" component={ResetPassword} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/profile" component={Profile} />

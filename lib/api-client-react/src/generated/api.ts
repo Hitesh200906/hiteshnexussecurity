@@ -28,6 +28,7 @@ import type {
   ChangePasswordInput,
   EmailVerifyInput,
   ErrorResponse,
+  ForgotPasswordInput,
   GetAdminUsersParams,
   HealthStatus,
   LoginCredentials,
@@ -37,8 +38,8 @@ import type {
   PlanPrices,
   PlanPricesInput,
   RegisterInput,
+  ResendVerificationInput,
   ResetPasswordInput,
-  ResetRequestInput,
   ScanCallbackInput,
   ScanJob,
   ScanRequest,
@@ -643,37 +644,37 @@ export const useChangePassword = <TError = ErrorType<ErrorResponse>,
       return useMutation(getChangePasswordMutationOptions(options));
     }
 
-export const getRequestPasswordResetUrl = () => {
+export const getResendVerificationUrl = () => {
 
 
 
 
-  return `/api/auth/request-password-reset`
+  return `/api/auth/resend-verification`
 }
 
 /**
- * @summary Request a password reset link by email
+ * @summary Resend the 6-digit email verification code
  */
-export const requestPasswordReset = async (resetRequestInput: ResetRequestInput, options?: RequestInit): Promise<MessageResponse> => {
+export const resendVerification = async (resendVerificationInput: ResendVerificationInput, options?: RequestInit): Promise<MessageResponse> => {
 
-  return customFetch<MessageResponse>(getRequestPasswordResetUrl(),
+  return customFetch<MessageResponse>(getResendVerificationUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      resetRequestInput,)
+      resendVerificationInput,)
   }
 );}
 
 
 
 
-export const getRequestPasswordResetMutationOptions = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<ResetRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<ResetRequestInput>}, TContext> => {
+export const getResendVerificationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendVerification>>, TError,{data: BodyType<ResendVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendVerification>>, TError,{data: BodyType<ResendVerificationInput>}, TContext> => {
 
-const mutationKey = ['requestPasswordReset'];
+const mutationKey = ['resendVerification'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -683,10 +684,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestPasswordReset>>, {data: BodyType<ResetRequestInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendVerification>>, {data: BodyType<ResendVerificationInput>}> = (props) => {
           const {data} = props ?? {};
 
-          return  requestPasswordReset(data,requestOptions)
+          return  resendVerification(data,requestOptions)
         }
 
 
@@ -696,22 +697,93 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type RequestPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof requestPasswordReset>>>
-    export type RequestPasswordResetMutationBody = BodyType<ResetRequestInput>
-    export type RequestPasswordResetMutationError = ErrorType<ErrorResponse>
+    export type ResendVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof resendVerification>>>
+    export type ResendVerificationMutationBody = BodyType<ResendVerificationInput>
+    export type ResendVerificationMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Request a password reset link by email
+ * @summary Resend the 6-digit email verification code
  */
-export const useRequestPasswordReset = <TError = ErrorType<ErrorResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<ResetRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useResendVerification = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendVerification>>, TError,{data: BodyType<ResendVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof requestPasswordReset>>,
+        Awaited<ReturnType<typeof resendVerification>>,
         TError,
-        {data: BodyType<ResetRequestInput>},
+        {data: BodyType<ResendVerificationInput>},
         TContext
       > => {
-      return useMutation(getRequestPasswordResetMutationOptions(options));
+      return useMutation(getResendVerificationMutationOptions(options));
+    }
+
+export const getForgotPasswordUrl = () => {
+
+
+
+
+  return `/api/auth/forgot-password`
+}
+
+/**
+ * @summary Send a 6-digit password reset code by email
+ */
+export const forgotPassword = async (forgotPasswordInput: ForgotPasswordInput, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getForgotPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      forgotPasswordInput,)
+  }
+);}
+
+
+
+
+export const getForgotPasswordMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof forgotPassword>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof forgotPassword>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext> => {
+
+const mutationKey = ['forgotPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof forgotPassword>>, {data: BodyType<ForgotPasswordInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  forgotPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ForgotPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof forgotPassword>>>
+    export type ForgotPasswordMutationBody = BodyType<ForgotPasswordInput>
+    export type ForgotPasswordMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Send a 6-digit password reset code by email
+ */
+export const useForgotPassword = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof forgotPassword>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof forgotPassword>>,
+        TError,
+        {data: BodyType<ForgotPasswordInput>},
+        TContext
+      > => {
+      return useMutation(getForgotPasswordMutationOptions(options));
     }
 
 export const getResetPasswordUrl = () => {
@@ -723,7 +795,7 @@ export const getResetPasswordUrl = () => {
 }
 
 /**
- * @summary Set a new password using a reset token
+ * @summary Set a new password using an emailed reset code
  */
 export const resetPassword = async (resetPasswordInput: ResetPasswordInput, options?: RequestInit): Promise<MessageResponse> => {
 
@@ -772,7 +844,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ResetPasswordMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Set a new password using a reset token
+ * @summary Set a new password using an emailed reset code
  */
 export const useResetPassword = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPassword>>, TError,{data: BodyType<ResetPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}

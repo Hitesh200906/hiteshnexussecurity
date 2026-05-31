@@ -189,20 +189,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /auth/request-password-reset:
+  /auth/resend-verification:
     post:
-      operationId: requestPasswordReset
+      operationId: resendVerification
       tags: [auth]
-      summary: Request a password reset link by email
+      summary: Resend the 6-digit email verification code
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ResetRequestInput"
+              $ref: "#/components/schemas/ResendVerificationInput"
       responses:
         "200":
-          description: Reset link sent if the account exists
+          description: Verification code resent if a pending account exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Send a 6-digit password reset code by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInput"
+      responses:
+        "200":
+          description: Reset code sent if the account exists
           content:
             application/json:
               schema:
@@ -218,7 +243,7 @@ paths:
     post:
       operationId: resetPassword
       tags: [auth]
-      summary: Set a new password using a reset token
+      summary: Set a new password using an emailed reset code
       requestBody:
         required: true
         content:
@@ -233,7 +258,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
         "400":
-          description: Invalid or expired token
+          description: Invalid or expired code
           content:
             application/json:
               schema:
@@ -718,7 +743,15 @@ components:
         - currentPassword
         - newPassword
 
-    ResetRequestInput:
+    ResendVerificationInput:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+
+    ForgotPasswordInput:
       type: object
       properties:
         email:
@@ -729,12 +762,15 @@ components:
     ResetPasswordInput:
       type: object
       properties:
-        token:
+        email:
+          type: string
+        code:
           type: string
         newPassword:
           type: string
       required:
-        - token
+        - email
+        - code
         - newPassword
 
     SignupData:
