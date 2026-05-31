@@ -23,6 +23,8 @@ export * from './passkeyOptions';
 export * from './planPrices';
 export * from './planPricesInput';
 export * from './registerInput';
+export * from './resetPasswordInput';
+export * from './resetRequestInput';
 export * from './scanCallbackInput';
 export * from './scanJob';
 export * from './scanRequest';

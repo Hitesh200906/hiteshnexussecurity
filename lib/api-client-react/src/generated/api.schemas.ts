@@ -61,6 +61,15 @@ export interface ChangePasswordInput {
   newPassword: string;
 }
 
+export interface ResetRequestInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  newPassword: string;
+}
+
 export interface SignupData {
   name: string;
   email: string;

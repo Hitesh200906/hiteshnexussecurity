@@ -113,6 +113,31 @@ export const ChangePasswordResponse = zod.object({
 
 
 /**
+ * @summary Request a password reset link by email
+ */
+export const RequestPasswordResetBody = zod.object({
+  "email": zod.string()
+})
+
+export const RequestPasswordResetResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Set a new password using a reset token
+ */
+export const ResetPasswordBody = zod.object({
+  "token": zod.string(),
+  "newPassword": zod.string()
+})
+
+export const ResetPasswordResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
  * @summary Get current plan credit prices
  */
 export const GetPlanPricesResponse = zod.object({

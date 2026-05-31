@@ -3,7 +3,7 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
 import { createSession, getSessionUser, destroySession } from "../lib/session";
-import { sendEmail, buildVerificationEmailHtml } from "../lib/email";
+import { sendEmail, buildVerificationEmailHtml, buildPasswordResetEmailHtml } from "../lib/email";
 import { logger } from "../lib/logger";
 import {
   LoginBody,
@@ -11,6 +11,8 @@ import {
   RegisterBody,
   VerifyEmailBody,
   ChangePasswordBody,
+  RequestPasswordResetBody,
+  ResetPasswordBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -29,12 +31,21 @@ const pendingVerifications = new Map<
   { code: string; name: string; passwordHash: string; expiresAt: number }
 >();
 
+// In-memory store for pending password resets
+// { token -> { userId, expiresAt } }
+const pendingResets = new Map<string, { userId: number; expiresAt: number }>();
+
 // Clean up expired entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [email, entry] of pendingVerifications.entries()) {
     if (entry.expiresAt < now) {
       pendingVerifications.delete(email);
+    }
+  }
+  for (const [token, entry] of pendingResets.entries()) {
+    if (entry.expiresAt < now) {
+      pendingResets.delete(token);
     }
   }
 }, 5 * 60 * 1000);
@@ -309,6 +320,85 @@ router.post("/auth/change-password", async (req, res): Promise<void> => {
   logger.info({ userId: result.user.id }, "User changed password");
 
   res.json({ message: "Password updated successfully" });
+});
+
+// Request a password reset link
+router.post("/auth/request-password-reset", async (req, res): Promise<void> => {
+  const parsed = RequestPasswordResetBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const normalizedEmail = parsed.data.email.toLowerCase().trim();
+  const genericMessage =
+    "If an account exists for that email, a password reset link has been sent.";
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, normalizedEmail));
+
+  // Always respond the same way to avoid leaking which emails are registered
+  if (!user) {
+    logger.info({ email: normalizedEmail }, "Password reset requested for unknown email");
+    res.json({ message: genericMessage });
+    return;
+  }
+
+  const token = randomBytes(32).toString("hex");
+  pendingResets.set(token, {
+    userId: user.id,
+    expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutes
+  });
+
+  const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || "localhost:80"}`;
+  const resetLink = `${baseUrl}/reset-password?token=${token}`;
+
+  // Send the email without blocking the response so that the request latency
+  // is the same whether or not the email exists (avoids an enumeration oracle).
+  void sendEmail(
+    normalizedEmail,
+    "Reset your Nexus Security password",
+    buildPasswordResetEmailHtml(resetLink, user.name)
+  )
+    .then(() => logger.info({ userId: user.id }, "Password reset link sent"))
+    .catch((err) => logger.error({ err, userId: user.id }, "Failed to send password reset email"));
+
+  res.json({ message: genericMessage });
+});
+
+// Complete a password reset using a token
+router.post("/auth/reset-password", async (req, res): Promise<void> => {
+  const parsed = ResetPasswordBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { token, newPassword } = parsed.data;
+
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "New password must be at least 6 characters" });
+    return;
+  }
+
+  const pending = pendingResets.get(token);
+  if (!pending || pending.expiresAt < Date.now()) {
+    pendingResets.delete(token);
+    res.status(400).json({ error: "This reset link is invalid or has expired. Please request a new one." });
+    return;
+  }
+
+  pendingResets.delete(token);
+
+  await db
+    .update(usersTable)
+    .set({ passwordHash: hashPassword(newPassword) })
+    .where(eq(usersTable.id, pending.userId));
+
+  logger.info({ userId: pending.userId }, "Password reset completed");
+  res.json({ message: "Your password has been reset. You can now sign in with your new password." });
 });
 
 // Google OAuth stub

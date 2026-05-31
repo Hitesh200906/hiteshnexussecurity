@@ -86,6 +86,45 @@ export function buildVerificationEmailHtml(code: string, name: string): string {
 </html>`;
 }
 
+export function buildPasswordResetEmailHtml(resetLink: string, name: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; background: #0a0a0f; color: #f8fafc; margin: 0; padding: 0; }
+    .wrap { max-width: 600px; margin: 40px auto; padding: 0 16px; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 40px; }
+    .logo { color: #2f9b9b; font-size: 22px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 24px; }
+    h2 { color: #f8fafc; font-size: 20px; margin: 0 0 8px; }
+    p { color: #94a3b8; line-height: 1.6; margin: 0 0 16px; }
+    .btn-wrap { text-align: center; margin: 32px 0; }
+    .btn { display: inline-block; background: #2f9b9b; color: #000000; padding: 16px 36px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; letter-spacing: 1px; }
+    .note { background: #0a0a0f; border-left: 3px solid #2f9b9b; padding: 12px 16px; border-radius: 4px; color: #94a3b8; font-size: 13px; margin-top: 8px; }
+    .divider { border: none; border-top: 1px solid #1e293b; margin: 28px 0; }
+    .footer { color: #475569; font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="logo">Nexus Security</div>
+      <h2>Reset your password</h2>
+      <p>Hello ${name},</p>
+      <p>We received a request to reset the password for your Nexus Security account. Click the button below to choose a new password:</p>
+      <div class="btn-wrap">
+        <a href="${resetLink}" class="btn">RESET PASSWORD</a>
+      </div>
+      <div class="note">This link expires in 30 minutes. If you did not request a password reset, you can safely ignore this email — your password will not change.</div>
+      <hr class="divider">
+      <div class="footer">&copy; 2026 Nexus Security. All rights reserved.</div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export function buildScanVerificationEmailHtml(companyName: string, verifyLink: string): string {
   return `<!DOCTYPE html>
 <html>

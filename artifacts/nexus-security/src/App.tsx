@@ -9,6 +9,8 @@ import Pricing from "@/pages/Pricing";
 import Reports from "@/pages/Reports";
 import Contact from "@/pages/Contact";
 import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import ResetPassword from "@/pages/ResetPassword";
 import Profile from "@/pages/Profile";
 import Dashboard from "@/pages/Dashboard";
 import Admin from "@/pages/Admin";
@@ -36,6 +38,8 @@ function Router() {
           <Route path="/reports" component={Reports} />
           <Route path="/contact" component={Contact} />
           <Route path="/login" component={Login} />
+          <Route path="/signup" component={Signup} />
+          <Route path="/reset-password" component={ResetPassword} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/profile" component={Profile} />
           <Route path="/admin" component={Admin} />
