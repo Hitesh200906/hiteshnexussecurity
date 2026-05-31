@@ -9,6 +9,7 @@ import { getSessionUser } from "../lib/session";
 import { sendEmail, buildScanVerificationEmailHtml } from "../lib/email";
 import { submitToScanner } from "../lib/scanner";
 import { logger } from "../lib/logger";
+import { getAppBaseUrl } from "../lib/base-url";
 import {
   RequestScanBody,
   VerifyCodeBody,
@@ -162,7 +163,7 @@ router.post("/request-scan", async (req, res): Promise<void> => {
   if (data.verificationMethod === "email") {
     const baseUrl =
       process.env.CALLBACK_URL?.replace("/api/scan-callback", "") ||
-      `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || "localhost:80"}`;
+      getAppBaseUrl();
     const verifyLink = `${baseUrl}/api/verify-scan/${jobId}`;
 
     await sendEmail(

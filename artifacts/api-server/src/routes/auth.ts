@@ -5,6 +5,7 @@ import { createHash, randomBytes } from "crypto";
 import { createSession, getSessionUser, destroySession } from "../lib/session";
 import { sendEmail, buildVerificationEmailHtml, buildPasswordResetEmailHtml } from "../lib/email";
 import { logger } from "../lib/logger";
+import { getAppBaseUrl } from "../lib/base-url";
 import {
   LoginBody,
   SignupBody,
@@ -352,8 +353,7 @@ router.post("/auth/request-password-reset", async (req, res): Promise<void> => {
     expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutes
   });
 
-  const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || "localhost:80"}`;
-  const resetLink = `${baseUrl}/reset-password?token=${token}`;
+  const resetLink = `${getAppBaseUrl()}/reset-password?token=${token}`;
 
   // Send the email without blocking the response so that the request latency
   // is the same whether or not the email exists (avoids an enumeration oracle).

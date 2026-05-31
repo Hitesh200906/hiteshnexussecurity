@@ -30,6 +30,25 @@ AI-powered vulnerability scanner for security-conscious developers, SMBs, and en
 - `artifacts/api-server/src/lib/session.ts` — Cookie-based session management
 - `artifacts/nexus-security/src/` — React frontend
 
+## Deploying to Vercel
+
+The app deploys as a **single Vercel project** from the repo root (`vercel.json`):
+
+- **Frontend**: `vite build` → static output served from `artifacts/nexus-security/dist/public`.
+- **API**: the Express app is pre-bundled by the api-server build into `api/_server/index.mjs` (self-contained ESM, so Vercel never has to resolve the pnpm workspace TS packages). The committed `api/index.ts` wrapper re-exports it as the serverless function. `_server/` is underscore-prefixed so Vercel does not turn its files into separate functions.
+- **Routing**: `/api/(.*)` is rewritten to the function (the Express router stays mounted at `/api`); all other paths fall back to `/index.html` for client-side routing.
+- **Build command**: `pnpm run vercel-build` (builds the API bundle, then the frontend).
+
+**Required Vercel env vars** (Project Settings → Environment Variables):
+
+- `DATABASE_URL` — must point to a publicly reachable Postgres (e.g. the Neon/Replit connection string). Vercel cannot host the DB.
+- `SESSION_SECRET`, `BREVO_API_KEY`, `MAIL_DEFAULT_SENDER` — same as Replit.
+- `ADMIN_PASSCODE` — admin gate passcode.
+- `APP_BASE_URL` — public site URL (e.g. `https://your-app.vercel.app`); used to build password-reset and scan-verification links. Falls back to `VERCEL_PROJECT_PRODUCTION_URL` if unset.
+- `NODE_ENV=production` is set automatically by Vercel (ensures the logger emits plain JSON, not the worker-thread pino-pretty transport).
+
+**Caveat**: the DB layer uses a node-postgres `Pool`. On serverless this is acceptable for low traffic but can exhaust connections at scale — consider `@neondatabase/serverless` later.
+
 ## Architecture decisions
 
 - Sessions stored in PostgreSQL (no Redis) with httpOnly cookies — simple and reliable
