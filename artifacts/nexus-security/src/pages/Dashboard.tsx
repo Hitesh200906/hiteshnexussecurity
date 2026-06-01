@@ -1,11 +1,10 @@
-import { useGetStatus, useGetScanStats, useGetScans } from "@workspace/api-client-react";
+import { useGetStatus, useGetScanStats, useGetScans, useGetReports } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutGrid, ScanSearch, FileText, CreditCard, Settings,
-  ShieldCheck, ArrowRight, Download, Search, Activity, ArrowUpRight,
+  ShieldCheck, ArrowRight, Download, ArrowUpRight, ScanLine, Activity, CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
 import { Footer } from "@/components/Footer";
 
 const SIDEBAR = [
@@ -16,39 +15,19 @@ const SIDEBAR = [
   { label: "Settings", icon: Settings, href: "/profile" },
 ];
 
-const RISK = [
-  { label: "Critical", value: 3, max: 22, color: "bg-red-500" },
-  { label: "High", value: 8, max: 22, color: "bg-orange-500" },
-  { label: "Medium", value: 14, max: 22, color: "bg-yellow-500" },
-  { label: "Low", value: 22, max: 22, color: "bg-primary" },
-];
-
-const ACTIVITY = [
-  { text: "Scan completed for acme-fintech.com", time: "2m ago" },
-  { text: "Critical finding resolved · VLN-2026-0421", time: "1h ago" },
-  { text: "Report rpt_8420 downloaded", time: "3h ago" },
-  { text: "Continuous scan started · halcyon.ai", time: "Yesterday" },
-  { text: "Plan upgraded to Professional", time: "2d ago" },
-];
-
-const SAMPLE_SCANS = [
-  { target: "acme-fintech.com", status: "completed", score: "72/100" },
-  { target: "api.lendwise.io", status: "completed", score: "88/100" },
-  { target: "shop.quill.dev", status: "in_progress", score: "—" },
-  { target: "internal-admin.northwave.co", status: "completed", score: "64/100" },
-  { target: "halcyon.ai", status: "queued", score: "—" },
-];
-
-const chartData = Array.from({ length: 30 }, (_, i) => ({
-  d: i,
-  v: Math.round(42 + i * 0.7 + Math.sin(i / 2.2) * 6 + (i > 20 ? (i - 20) * 1.4 : 0)),
-}));
-
 function hostOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
     return url;
+  }
+}
+
+function fmtDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return "—";
   }
 }
 
@@ -60,16 +39,11 @@ function statusBadge(status: string) {
   return "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
 }
 
-function stableScore(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return `${55 + (h % 41)}/100`;
-}
-
 export default function Dashboard() {
   const { data: status } = useGetStatus();
   const { data: stats } = useGetScanStats({ query: { enabled: !!status?.loggedIn, queryKey: ["scan-stats"] } });
   const { data: scans } = useGetScans({ query: { enabled: !!status?.loggedIn, queryKey: ["scans"] } });
+  const { data: reports } = useGetReports({ query: { enabled: !!status?.loggedIn, queryKey: ["reports"] } });
   const [location] = useLocation();
 
   if (!status?.loggedIn) {
@@ -87,22 +61,14 @@ export default function Dashboard() {
     );
   }
 
-  const recentScans =
-    scans && scans.length > 0
-      ? scans.slice(0, 6).map((s) => ({
-          target: hostOf(s.websiteUrl),
-          status: s.status,
-          score: s.status.toLowerCase() === "completed" ? stableScore(s.id) : "—",
-        }))
-      : SAMPLE_SCANS;
-
-  const scansThisMonth = stats?.totalScans && stats.totalScans > 0 ? stats.totalScans : 18;
+  const recentScans = (scans ?? []).slice(0, 6);
+  const recentReports = (reports ?? []).slice(0, 6);
 
   const KPIS = [
-    { label: "Security Score", value: "72", delta: "+6", up: true },
-    { label: "Open Findings", value: "47", delta: "-12", up: true },
-    { label: "Scans This Month", value: String(scansThisMonth), delta: "+4", up: true },
-    { label: "Avg. Resolve Time", value: "3.2d", delta: "-0.6d", up: true },
+    { label: "Total Scans", value: stats?.totalScans ?? 0, icon: ScanLine },
+    { label: "Active Scans", value: stats?.activeScans ?? 0, icon: Activity },
+    { label: "Completed Scans", value: stats?.completedScans ?? 0, icon: CheckCircle2 },
+    { label: "Reports Available", value: stats?.reportsAvailable ?? 0, icon: FileText },
   ];
 
   return (
@@ -131,10 +97,10 @@ export default function Dashboard() {
               })}
             </nav>
             <div className="m-3 rounded-xl border border-white/10 bg-[#0c0c0c] p-4">
-              <p className="text-xs text-muted-foreground mb-1">{status.user?.isAdmin ? "Admin" : "Professional"} Plan</p>
+              <p className="text-xs text-muted-foreground mb-1">Credits</p>
               <p className="text-sm text-foreground font-semibold mb-3">{stats?.credits ?? 0} credits remaining</p>
               <Link href="/pricing" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
-                Upgrade plan <ArrowRight className="w-3 h-3" />
+                Buy more <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
           </aside>
@@ -144,17 +110,13 @@ export default function Dashboard() {
             <div className="flex items-center justify-between gap-4 mb-7">
               <div>
                 <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-muted-foreground">/dashboard</p>
-                <h1 className="text-2xl font-bold text-foreground mt-0.5">Overview</h1>
+                <h1 className="text-2xl font-bold text-foreground mt-0.5">
+                  Welcome back, {status.user?.name?.split(" ")[0] || "there"}
+                </h1>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2 px-3 h-9 rounded-full border border-white/10 bg-white/[0.03] text-muted-foreground text-sm">
-                  <Search className="w-3.5 h-3.5" /> Search
-                  <span className="ml-2 text-[10px] font-mono border border-white/10 rounded px-1.5 py-0.5">⌘K</span>
-                </div>
-                <Link href="/pricing" className="inline-flex items-center gap-2 px-4 h-9 bg-white text-black font-semibold text-sm rounded-full hover:bg-white/90 transition-colors">
-                  New Scan
-                </Link>
-              </div>
+              <Link href="/pricing" className="inline-flex items-center gap-2 px-4 h-9 bg-white text-black font-semibold text-sm rounded-full hover:bg-white/90 transition-colors">
+                New Scan
+              </Link>
             </div>
 
             {/* KPI cards */}
@@ -167,117 +129,106 @@ export default function Dashboard() {
                   transition={{ duration: 0.35, delay: i * 0.05 }}
                   className="rounded-2xl border border-white/8 bg-[#0c0c0c] p-5"
                 >
-                  <div className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground mb-3">{k.label}</div>
-                  <div className="flex items-end justify-between">
-                    <span className={`text-4xl font-bold ${k.label === "Security Score" ? "text-primary" : "text-foreground"}`}>{k.value}</span>
-                    <span className="text-xs font-mono text-emerald-400">{k.delta}</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground">{k.label}</span>
+                    <k.icon className="w-4 h-4 text-primary/70" />
                   </div>
+                  <span className="text-4xl font-bold text-foreground">{k.value}</span>
                 </motion.div>
               ))}
             </div>
 
-            {/* Chart + Risk */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-              <div className="lg:col-span-2 rounded-2xl border border-white/8 bg-[#0c0c0c] p-5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground">Security Score</span>
-                  <Activity className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <h3 className="text-base font-semibold text-foreground mb-4">Last 30 days</h3>
-                <div className="h-[240px] -mx-2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="scoreFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2ec2b3" stopOpacity={0.35} />
-                          <stop offset="100%" stopColor="#2ec2b3" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Tooltip
-                        cursor={{ stroke: "#2ec2b3", strokeOpacity: 0.3 }}
-                        contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 12 }}
-                        labelFormatter={() => ""}
-                        formatter={(v: number) => [`${v}`, "Score"]}
-                      />
-                      <Area type="monotone" dataKey="v" stroke="#2ec2b3" strokeWidth={2} fill="url(#scoreFill)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
+            {/* Recent scans + Recent reports */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="rounded-2xl border border-white/8 bg-[#0c0c0c] p-5">
-                <div className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground mb-5">Risk Distribution</div>
-                <div className="space-y-5">
-                  {RISK.map((r) => (
-                    <div key={r.label}>
-                      <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-muted-foreground">{r.label}</span>
-                        <span className="text-foreground font-mono">{r.value}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                        <div className={`h-full rounded-full ${r.color}`} style={{ width: `${(r.value / r.max) * 100}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Recent scans + Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 rounded-2xl border border-white/8 bg-[#0c0c0c] p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base font-semibold text-foreground">Recent Scans</h3>
                   <Link href="/profile" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
                     View all <ArrowUpRight className="w-3 h-3" />
                   </Link>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/70">
-                        <th className="text-left font-normal pb-3">Target</th>
-                        <th className="text-left font-normal pb-3">Status</th>
-                        <th className="text-left font-normal pb-3">Score</th>
-                        <th className="pb-3"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentScans.map((s, i) => (
-                        <tr key={`${s.target}-${i}`} className="border-t border-white/5">
-                          <td className="py-3.5 font-mono text-foreground/90 text-xs">{s.target}</td>
-                          <td className="py-3.5">
-                            <span className={`text-[10px] font-mono uppercase tracking-wide border rounded px-2 py-0.5 ${statusBadge(s.status)}`}>
-                              {s.status.replace("_", " ")}
-                            </span>
-                          </td>
-                          <td className="py-3.5 font-mono text-muted-foreground text-xs">{s.score}</td>
-                          <td className="py-3.5 text-right">
-                            <Download className="w-4 h-4 text-muted-foreground hover:text-foreground inline-block cursor-pointer" />
-                          </td>
+                {recentScans.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <ScanSearch className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-4">No scans yet.</p>
+                    <Link href="/pricing" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                      Start your first scan <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/70">
+                          <th className="text-left font-normal pb-3">Target</th>
+                          <th className="text-left font-normal pb-3">Plan</th>
+                          <th className="text-left font-normal pb-3">Status</th>
+                          <th className="text-left font-normal pb-3">Date</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {recentScans.map((s) => (
+                          <tr key={s.id} className="border-t border-white/5">
+                            <td className="py-3.5 font-mono text-foreground/90 text-xs">{hostOf(s.websiteUrl)}</td>
+                            <td className="py-3.5 text-muted-foreground text-xs capitalize">{s.plan}</td>
+                            <td className="py-3.5">
+                              <span className={`text-[10px] font-mono uppercase tracking-wide border rounded px-2 py-0.5 ${statusBadge(s.status)}`}>
+                                {s.status.replace("_", " ")}
+                              </span>
+                            </td>
+                            <td className="py-3.5 font-mono text-muted-foreground text-xs">{fmtDate(s.createdAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               <div className="rounded-2xl border border-white/8 bg-[#0c0c0c] p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-base font-semibold text-foreground">Activity</h3>
-                  <Activity className="w-4 h-4 text-muted-foreground" />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-semibold text-foreground">Recent Reports</h3>
+                  <Link href="/reports" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                    View all <ArrowUpRight className="w-3 h-3" />
+                  </Link>
                 </div>
-                <ul className="space-y-5">
-                  {ACTIVITY.map((a, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                      <div>
-                        <p className="text-sm text-foreground/90 leading-snug">{a.text}</p>
-                        <p className="text-xs text-muted-foreground/60 font-mono mt-0.5">{a.time}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {recentReports.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <FileText className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">No reports yet. Reports appear here once a scan completes.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground/70">
+                          <th className="text-left font-normal pb-3">Target</th>
+                          <th className="text-left font-normal pb-3">Plan</th>
+                          <th className="text-left font-normal pb-3">Date</th>
+                          <th className="pb-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentReports.map((r) => (
+                          <tr key={r.id} className="border-t border-white/5">
+                            <td className="py-3.5 font-mono text-foreground/90 text-xs">{r.websiteUrl ? hostOf(r.websiteUrl) : "—"}</td>
+                            <td className="py-3.5 text-muted-foreground text-xs capitalize">{r.plan ?? "—"}</td>
+                            <td className="py-3.5 font-mono text-muted-foreground text-xs">{fmtDate(r.createdAt)}</td>
+                            <td className="py-3.5 text-right">
+                              {r.pdfUrl ? (
+                                <a href={r.pdfUrl} target="_blank" rel="noreferrer">
+                                  <Download className="w-4 h-4 text-muted-foreground hover:text-foreground inline-block cursor-pointer" />
+                                </a>
+                              ) : (
+                                <Download className="w-4 h-4 text-muted-foreground/30 inline-block" />
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -28,7 +28,7 @@ export default function VerifyEmail() {
       await queryClient.invalidateQueries({ queryKey: getGetStatusQueryKey() });
       queryClient.invalidateQueries({ queryKey: getAdminCheckQueryKey() });
       toast({ title: "Account verified", description: "Welcome to Nexus Security." });
-      setLocation("/");
+      setLocation("/dashboard");
     } catch (error: any) {
       const msg = error?.data?.error || error?.message || "Invalid or expired code.";
       toast({ title: "Verification failed", description: msg, variant: "destructive" });

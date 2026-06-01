@@ -5,10 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
-const NAV_LINKS = [
+const BASE_LINKS = [
   { label: "Features", href: "/" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Dashboard", href: "/dashboard" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -28,6 +27,10 @@ export function Navbar() {
 
   const firstName = status?.user?.name?.split(" ")[0] || "Profile";
 
+  const navLinks = status?.loggedIn
+    ? [BASE_LINKS[0], BASE_LINKS[1], { label: "Dashboard", href: "/dashboard" }, BASE_LINKS[2]]
+    : BASE_LINKS;
+
   return (
     <div className="fixed top-4 left-0 right-0 z-50 px-4">
       <nav
@@ -45,7 +48,7 @@ export function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-7">
-            {NAV_LINKS.map(({ label, href }) => (
+            {navLinks.map(({ label, href }) => (
               <Link
                 key={href}
                 href={href}
@@ -83,10 +86,10 @@ export function Navbar() {
                   Login
                 </Link>
                 <Link
-                  href="/pricing"
+                  href="/signup"
                   className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-white text-black rounded-full hover:bg-white/90 transition-all duration-200 shadow-[0_0_24px_rgba(255,255,255,0.12)]"
                 >
-                  Start Free Scan <ArrowRight className="w-3.5 h-3.5" />
+                  Sign up <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </>
             )}
@@ -110,7 +113,7 @@ export function Navbar() {
               className="md:hidden border-t border-white/10 overflow-hidden bg-black/95 rounded-b-3xl"
             >
               <div className="px-5 py-4 flex flex-col gap-4">
-                {NAV_LINKS.map(({ label, href }) => (
+                {navLinks.map(({ label, href }) => (
                   <Link
                     key={href}
                     href={href}
@@ -133,11 +136,11 @@ export function Navbar() {
                   <>
                     <Link href="/login" onClick={() => setMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">Login</Link>
                     <Link
-                      href="/pricing"
+                      href="/signup"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-2 text-sm font-semibold bg-white text-black rounded-full px-5 py-2 hover:bg-white/90 w-fit"
                     >
-                      Start Free Scan <ArrowRight className="w-3.5 h-3.5" />
+                      Sign up <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </>
                 )}
