@@ -2,7 +2,7 @@ import { useGetStatus, useGetScanStats, useGetScans, useGetReports } from "@work
 import { Link, useLocation } from "wouter";
 import {
   LayoutGrid, ScanSearch, FileText, CreditCard, Settings,
-  ShieldCheck, ArrowRight, Download, ArrowUpRight, ScanLine, Activity, CheckCircle2,
+  ShieldCheck, ArrowRight, Download, ArrowUpRight, ScanLine, Activity, CheckCircle2, Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Footer } from "@/components/Footer";
@@ -40,11 +40,19 @@ function statusBadge(status: string) {
 }
 
 export default function Dashboard() {
-  const { data: status } = useGetStatus();
+  const { data: status, isLoading: statusLoading } = useGetStatus();
   const { data: stats } = useGetScanStats({ query: { enabled: !!status?.loggedIn, queryKey: ["scan-stats"] } });
-  const { data: scans } = useGetScans({ query: { enabled: !!status?.loggedIn, queryKey: ["scans"] } });
-  const { data: reports } = useGetReports({ query: { enabled: !!status?.loggedIn, queryKey: ["reports"] } });
+  const { data: scans, isLoading: scansLoading, isFetched: scansFetched } = useGetScans({ query: { enabled: !!status?.loggedIn, queryKey: ["scans"] } });
+  const { data: reports, isLoading: reportsLoading, isFetched: reportsFetched } = useGetReports({ query: { enabled: !!status?.loggedIn, queryKey: ["reports"] } });
   const [location] = useLocation();
+
+  if (statusLoading) {
+    return (
+      <div className="flex-1 w-full min-h-screen flex items-center justify-center bg-[#060606] pt-28 px-4">
+        <Loader2 className="w-7 h-7 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   if (!status?.loggedIn) {
     return (
@@ -147,7 +155,11 @@ export default function Dashboard() {
                     View all <ArrowUpRight className="w-3 h-3" />
                   </Link>
                 </div>
-                {recentScans.length === 0 ? (
+                {scansLoading || !scansFetched ? (
+                  <div className="py-10 flex justify-center">
+                    <Loader2 className="w-6 h-6 text-primary/60 animate-spin" />
+                  </div>
+                ) : recentScans.length === 0 ? (
                   <div className="py-10 text-center">
                     <ScanSearch className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
                     <p className="text-sm text-muted-foreground mb-4">No scans yet.</p>
@@ -192,7 +204,11 @@ export default function Dashboard() {
                     View all <ArrowUpRight className="w-3 h-3" />
                   </Link>
                 </div>
-                {recentReports.length === 0 ? (
+                {reportsLoading || !reportsFetched ? (
+                  <div className="py-10 flex justify-center">
+                    <Loader2 className="w-6 h-6 text-primary/60 animate-spin" />
+                  </div>
+                ) : recentReports.length === 0 ? (
                   <div className="py-10 text-center">
                     <FileText className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
                     <p className="text-sm text-muted-foreground">No reports yet. Reports appear here once a scan completes.</p>
