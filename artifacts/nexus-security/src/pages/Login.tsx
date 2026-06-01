@@ -21,7 +21,7 @@ export default function Login() {
       await loginMutation.mutateAsync({ data: { email, password, rememberMe: true } });
       await queryClient.invalidateQueries({ queryKey: getGetStatusQueryKey() });
       queryClient.invalidateQueries({ queryKey: getAdminCheckQueryKey() });
-      setLocation("/dashboard");
+      setLocation("/");
     } catch (error: any) {
       if (error?.data?.needsVerification) {
         toast({ title: "Verify your email", description: "Enter the code we sent to finish signing in." });

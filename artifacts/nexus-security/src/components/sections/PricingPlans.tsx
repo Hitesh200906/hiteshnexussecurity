@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { useGetPlanPrices, useRequestScan, useVerifyCode } from "@workspace/api-client-react";
+import { useGetPlanPrices, useRequestScan, useVerifyCode, useGetStatus } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -85,6 +85,7 @@ const HIGHLIGHTED_FEATURES = new Set(["Bug Detector"]);
 
 export function PricingPlans() {
   const { data: plans } = useGetPlanPrices();
+  const { data: status } = useGetStatus();
   const [selectedPlan, setSelectedPlan] = useState<ScanRequestPlan | null>(null);
   const [verificationMethod, setVerificationMethod] = useState<ScanRequestVerificationMethod | null>(null);
   const requestScan = useRequestScan();
@@ -108,6 +109,14 @@ export function PricingPlans() {
   });
 
   const handleSelectPlan = (plan: ScanRequestPlan) => {
+    if (!status?.loggedIn) {
+      toast({
+        title: "Please log in to continue",
+        description: "Sign in or create an account to start a scan.",
+      });
+      setLocation("/login");
+      return;
+    }
     setSelectedPlan(plan);
     setVerificationMethod(null);
     setScanState({ status: "idle" });

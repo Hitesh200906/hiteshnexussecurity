@@ -25,10 +25,10 @@ export default function VerifyEmail() {
     e.preventDefault();
     try {
       await verifyEmailMutation.mutateAsync({ data: { email, code } });
-      queryClient.invalidateQueries({ queryKey: getGetStatusQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getGetStatusQueryKey() });
       queryClient.invalidateQueries({ queryKey: getAdminCheckQueryKey() });
       toast({ title: "Account verified", description: "Welcome to Nexus Security." });
-      setLocation("/dashboard");
+      setLocation("/");
     } catch (error: any) {
       const msg = error?.data?.error || error?.message || "Invalid or expired code.";
       toast({ title: "Verification failed", description: msg, variant: "destructive" });
