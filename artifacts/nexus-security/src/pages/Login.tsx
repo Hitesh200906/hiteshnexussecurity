@@ -19,9 +19,8 @@ export default function Login() {
     e.preventDefault();
     try {
       await loginMutation.mutateAsync({ data: { email, password, rememberMe: true } });
-      queryClient.invalidateQueries({ queryKey: getGetStatusQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getGetStatusQueryKey() });
       queryClient.invalidateQueries({ queryKey: getAdminCheckQueryKey() });
-      toast({ title: "Welcome back", description: "Signed in successfully." });
       setLocation("/dashboard");
     } catch (error: any) {
       if (error?.data?.needsVerification) {

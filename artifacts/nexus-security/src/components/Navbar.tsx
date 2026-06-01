@@ -30,7 +30,11 @@ export function Navbar() {
 
   return (
     <div className="fixed top-4 left-0 right-0 z-50 px-4">
-      <nav className="container mx-auto max-w-5xl rounded-full border border-white/10 backdrop-blur-2xl bg-black/60 shadow-[0_8px_40px_rgba(0,0,0,0.5)]">
+      <nav
+        className={`container mx-auto max-w-5xl border border-white/10 backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.5)] transition-[border-radius] ${
+          menuOpen ? "rounded-3xl bg-black/95" : "rounded-full bg-black/60"
+        }`}
+      >
         <div className="px-5 h-14 flex items-center justify-between gap-6">
 
           <Link href="/" className="flex items-center gap-2 shrink-0 group">
@@ -103,7 +107,7 @@ export function Navbar() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-white/8 overflow-hidden"
+              className="md:hidden border-t border-white/10 overflow-hidden bg-black/95 rounded-b-3xl"
             >
               <div className="px-5 py-4 flex flex-col gap-4">
                 {NAV_LINKS.map(({ label, href }) => (
