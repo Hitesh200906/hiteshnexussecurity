@@ -1,6 +1,7 @@
 import { useGetAdminAnalytics } from "@workspace/api-client-react";
-import { Users, Activity, ScanLine, CheckCircle2, Clock, CreditCard, MessageSquare, ShieldCheck, Loader2 } from "lucide-react";
+import { Users, Activity, ScanLine, CheckCircle2, Clock, CreditCard, MessageSquare, ShieldCheck, Loader2, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 type MetricPoint = { label: string; value: number };
 
@@ -26,10 +27,25 @@ function MiniBars({ data, accent = "bg-primary" }: { data: MetricPoint[]; accent
 }
 
 export function AdminOverview() {
-  const { data: analytics, isLoading } = useGetAdminAnalytics({ query: { queryKey: ["admin-analytics"] } });
+  const { data: analytics, isLoading, refetch, isFetching } = useGetAdminAnalytics({ query: { queryKey: ["admin-analytics"] } });
 
-  if (isLoading || !analytics) {
+  if (isLoading) {
     return <div className="py-20 flex justify-center"><Loader2 className="w-7 h-7 text-primary animate-spin" /></div>;
+  }
+
+  if (!analytics) {
+    return (
+      <div className="py-16 flex flex-col items-center text-center gap-4">
+        <AlertTriangle className="w-8 h-8 text-destructive" />
+        <div>
+          <p className="text-sm font-semibold text-foreground">Couldn't load analytics</p>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm">The metrics service did not respond. This usually clears on a retry.</p>
+        </div>
+        <Button onClick={() => refetch()} disabled={isFetching} variant="outline" className="border-white/15">
+          {isFetching ? "Retrying..." : "Retry"}
+        </Button>
+      </div>
+    );
   }
 
   const kpis = [

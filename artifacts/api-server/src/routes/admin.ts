@@ -51,7 +51,7 @@ import { sendEmail, buildPasswordResetCodeEmailHtml } from "../lib/email";
 
 const router: IRouter = Router();
 
-const ADMIN_EMAIL = "nexussecurity777@gmail.com";
+const ADMIN_EMAIL = "hitesh.tanwar8318@gmail.com";
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || "nexus admin";
 
 // In-memory challenge store (passkey registration / auth)

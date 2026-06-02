@@ -20,6 +20,7 @@ import {
   ForgotPasswordBody,
   ResetPasswordBody,
 } from "@workspace/api-zod";
+import { SUPER_ADMIN_EMAIL } from "../lib/seed";
 
 const router: IRouter = Router();
 
@@ -320,6 +321,27 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   if (needsRehash) {
     const upgraded = await hashPassword(password);
     await db.update(usersTable).set({ passwordHash: upgraded }).where(eq(usersTable.id, user.id));
+  }
+
+  // Reconcile super-admin status at login so it holds on every runtime
+  // (including Vercel serverless, where the boot-time seed does not run).
+  // The designated email is always promoted; any other account that still
+  // carries super_admin is demoted to a regular admin.
+  if (user.email.toLowerCase() === SUPER_ADMIN_EMAIL) {
+    if (user.role !== "super_admin") {
+      await db
+        .update(usersTable)
+        .set({ role: "super_admin", isAdmin: true })
+        .where(eq(usersTable.id, user.id));
+      user.role = "super_admin";
+      user.isAdmin = true;
+    }
+  } else if (user.role === "super_admin") {
+    await db
+      .update(usersTable)
+      .set({ role: "admin" })
+      .where(eq(usersTable.id, user.id));
+    user.role = "admin";
   }
 
   await createSession(user.id, res);

@@ -1,17 +1,20 @@
 import { db, usersTable, pricingPlansTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { hashPassword } from "./password";
 import { logger } from "./logger";
 
-const SUPER_ADMIN_EMAIL = "nexussecurity777@gmail.com";
+// The single designated super-admin account. Any account with this email is
+// always promoted to super_admin (at boot and at login).
+export const SUPER_ADMIN_EMAIL = "hitesh.tanwar8318@gmail.com";
 
-// Seed (or repair) the single super-admin account so the documented credentials
-// always work. The password can be overridden with SUPER_ADMIN_PASSWORD.
+// Legacy super-admin email that should no longer hold super-admin status.
+const LEGACY_SUPER_ADMIN_EMAIL = "nexussecurity777@gmail.com";
+
+// Seed (or repair) the designated super-admin account. If the account already
+// exists its password is left untouched (the owner keeps their own password);
+// only a freshly created account gets the default/SUPER_ADMIN_PASSWORD value.
 export async function seedSuperAdmin(): Promise<void> {
   try {
-    const password = process.env.SUPER_ADMIN_PASSWORD || "Hitesh@2009#";
-    const passwordHash = await hashPassword(password);
-
     const [existing] = await db
       .select()
       .from(usersTable)
@@ -26,10 +29,11 @@ export async function seedSuperAdmin(): Promise<void> {
           isVerified: true,
           isBanned: false,
           isSuspended: false,
-          passwordHash,
         })
         .where(eq(usersTable.id, existing.id));
     } else {
+      const password = process.env.SUPER_ADMIN_PASSWORD || "Hitesh@2009#";
+      const passwordHash = await hashPassword(password);
       await db.insert(usersTable).values({
         name: "Nexus Super Admin",
         email: SUPER_ADMIN_EMAIL,
@@ -40,6 +44,30 @@ export async function seedSuperAdmin(): Promise<void> {
         isVerified: true,
       });
     }
+
+    // Demote the legacy super admin so it is no longer a super admin (kept as a
+    // regular admin). Guard on role + email so nothing else is affected.
+    await db
+      .update(usersTable)
+      .set({ role: "admin" })
+      .where(
+        and(
+          eq(usersTable.email, LEGACY_SUPER_ADMIN_EMAIL),
+          eq(usersTable.role, "super_admin"),
+        ),
+      );
+
+    // Safety net: ensure no other account silently retains super_admin.
+    await db
+      .update(usersTable)
+      .set({ role: "admin" })
+      .where(
+        and(
+          eq(usersTable.role, "super_admin"),
+          ne(usersTable.email, SUPER_ADMIN_EMAIL),
+        ),
+      );
+
     logger.info("Super admin account ensured");
   } catch (err) {
     logger.error({ err }, "Failed to seed super admin");

@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ShieldAlert, Fingerprint, KeyRound, Trash2, ShieldCheck,
   LayoutDashboard, Users, Crown, MessageSquare, ScanLine, FileText, Tag, ScrollText, Lock,
+  Menu, X,
 } from "lucide-react";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { AdminUsers } from "@/components/admin/AdminUsers";
@@ -41,6 +42,7 @@ export default function Admin() {
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [showPasscodeForm, setShowPasscodeForm] = useState(false);
   const [section, setSection] = useState<SectionId>("overview");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const isSuperAdmin = status?.user?.role === "super_admin" || status?.user?.isSuperAdmin === true;
 
@@ -189,11 +191,16 @@ export default function Admin() {
   const visibleNav = NAV.filter((n) => !n.super || isSuperAdmin);
   const activeNav = visibleNav.find((n) => n.id === section) ?? visibleNav[0];
 
+  const selectSection = (id: SectionId) => {
+    setSection(id);
+    setMobileNavOpen(false);
+  };
+
   return (
-    <div className="flex-1 w-full bg-background min-h-[calc(100vh-4rem)]">
+    <div className="flex-1 w-full bg-background pt-20">
       <div className="flex">
-        {/* Sidebar */}
-        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-white/8 bg-[#080808] min-h-[calc(100vh-4rem)] p-4 gap-1">
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-white/8 bg-[#080808] sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto p-4 gap-1">
           <div className="flex items-center gap-2 px-2 pb-4 mb-2 border-b border-white/8">
             <ShieldAlert className="w-5 h-5 text-primary" />
             <div>
@@ -204,7 +211,7 @@ export default function Admin() {
           {visibleNav.map((n) => (
             <button
               key={n.id}
-              onClick={() => setSection(n.id)}
+              onClick={() => selectSection(n.id)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${section === n.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
             >
               <n.icon className="w-4 h-4 shrink-0" />
@@ -215,18 +222,39 @@ export default function Admin() {
         </aside>
 
         {/* Content */}
-        <main className="flex-1 min-w-0 p-6 md:p-8">
-          {/* Mobile nav */}
-          <div className="md:hidden flex gap-2 overflow-x-auto pb-4 mb-2 -mx-1 px-1">
-            {visibleNav.map((n) => (
-              <button
-                key={n.id}
-                onClick={() => setSection(n.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap ${section === n.id ? "bg-primary/15 text-primary" : "text-muted-foreground bg-white/5"}`}
-              >
-                <n.icon className="w-3.5 h-3.5" /> {n.label}
-              </button>
-            ))}
+        <main className="flex-1 min-w-0 p-5 sm:p-6 md:p-8">
+          {/* Mobile menu toggle */}
+          <div className="md:hidden mb-4">
+            <button
+              onClick={() => setMobileNavOpen((v) => !v)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/12 bg-white/5 text-sm font-medium text-foreground"
+              aria-expanded={mobileNavOpen}
+            >
+              {mobileNavOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              Menu
+            </button>
+
+            {mobileNavOpen && (
+              <div className="mt-3 rounded-2xl border border-white/8 bg-[#0c0c0c] p-3">
+                <div className="flex items-center justify-between px-2 pb-3 mb-2 border-b border-white/8">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">Admin Console</p>
+                  <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(47,155,155,0.8)]" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  {visibleNav.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => selectSection(n.id)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${section === n.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                    >
+                      <n.icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{n.label}</span>
+                      {n.super && <Lock className="w-3 h-3 ml-auto text-amber-400/70" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mb-6">
