@@ -1,5 +1,8 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { runSeeds } from "./lib/seed";
+
+void runSeeds();
 
 const rawPort = process.env["PORT"];
 

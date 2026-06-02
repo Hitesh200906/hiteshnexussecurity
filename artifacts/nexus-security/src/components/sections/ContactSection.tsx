@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Phone, MapPin, Clock, ArrowRight } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, ArrowRight, CheckCircle2, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useCreateSupportTicket, useGetStatus } from "@workspace/api-client-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useLocation } from "wouter";
 
 const INFO = [
   { icon: Mail, label: "Email", value: "security@nexussecurity.com", sub: "Typical response within 4 hours" },
@@ -15,12 +18,34 @@ const INFO = [
 
 export function ContactSection() {
   const { toast } = useToast();
-  const [sent, setSent] = useState(false);
+  const { data: status } = useGetStatus();
+  const createTicket = useCreateSupportTicket();
+  const [, setLocation] = useLocation();
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [form, setForm] = useState({ name: "", email: "", subject: "", company: "", message: "" });
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
-    toast({ title: "Request received", description: "Our security team will reach out shortly." });
+    try {
+      const message = form.company ? `Company: ${form.company}\n\n${form.message}` : form.message;
+      await createTicket.mutateAsync({
+        data: {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          subject: form.subject.trim() || "General inquiry",
+          message,
+        },
+      });
+      setSuccess(true);
+      setForm({ name: "", email: "", subject: "", company: "", message: "" });
+    } catch (error: any) {
+      const msg = error?.data?.error || error?.message || "Failed to send your request.";
+      toast({ title: "Could not submit", description: msg, variant: "destructive" });
+    }
   };
 
   return (
@@ -33,7 +58,8 @@ export function ContactSection() {
               <span className="block text-muted-foreground/70">security audit</span>
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-10 max-w-md">
-              Tell us about your stack and compliance needs. Our security engineers will scope a custom audit and get back to you fast.
+              Tell us about your stack and compliance needs. Every message opens a support ticket you can track and
+              chat on from your profile.
             </p>
 
             <div className="space-y-5">
@@ -63,36 +89,93 @@ export function ContactSection() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Full Name</Label>
-                <Input required placeholder="Jane Smith" className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary" />
+                <Input required value={form.name} onChange={set("name")} placeholder="Jane Smith" className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary" />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Work Email</Label>
-                <Input required type="email" placeholder="jane@company.com" className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary" />
+                <Input required type="email" value={form.email} onChange={set("email")} placeholder="jane@company.com" className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary" />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Company</Label>
-              <Input required placeholder="Acme Corp" className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Subject</Label>
+                <Input required value={form.subject} onChange={set("subject")} placeholder="Custom audit request" className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Company</Label>
+                <Input value={form.company} onChange={set("company")} placeholder="Acme Corp" className="bg-black/50 border-white/10 rounded-lg focus-visible:ring-primary" />
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">How can we help?</Label>
               <textarea
                 required
                 rows={4}
+                value={form.message}
+                onChange={set("message")}
                 placeholder="Tell us about your environment and goals..."
                 className="w-full rounded-lg bg-black/50 border border-white/10 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none"
               />
             </div>
             <Button
               type="submit"
-              disabled={sent}
+              disabled={createTicket.isPending}
               className="w-full h-12 rounded-full bg-primary text-black font-semibold hover:bg-primary/90"
             >
-              {sent ? "Request Sent" : <span className="flex items-center gap-2">Send Request <ArrowRight className="w-4 h-4" /></span>}
+              {createTicket.isPending ? "Submitting..." : <span className="flex items-center gap-2">Send Request <ArrowRight className="w-4 h-4" /></span>}
             </Button>
           </motion.form>
         </div>
       </div>
+
+      <Dialog open={success} onOpenChange={setSuccess}>
+        <DialogContent className="glass-panel border-primary/30 max-w-md text-center">
+          <div className="flex flex-col items-center pt-2">
+            <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mb-5">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-2">Request submitted</h3>
+            <p className="text-sm text-muted-foreground mb-1">
+              A support ticket has been opened for your request.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              {status?.loggedIn
+                ? "Track it and chat with our team from your profile."
+                : "We'll reply to your email shortly. Sign in to chat with our team in real time."}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              {status?.loggedIn ? (
+                <Button
+                  onClick={() => {
+                    setSuccess(false);
+                    setLocation("/profile#tickets");
+                  }}
+                  className="flex-1 rounded-full bg-primary text-black font-semibold hover:bg-primary/90 h-11"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" /> Go to Profile
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setSuccess(false);
+                    setLocation("/login");
+                  }}
+                  className="flex-1 rounded-full bg-primary text-black font-semibold hover:bg-primary/90 h-11"
+                >
+                  Sign in
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => setSuccess(false)}
+                className="flex-1 rounded-full border-white/15 text-foreground hover:bg-white/5 h-11"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

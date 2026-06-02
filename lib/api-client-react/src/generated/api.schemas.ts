@@ -23,6 +23,18 @@ export interface UserProfile {
   email: string;
   credits: number;
   isAdmin: boolean;
+  role?: string;
+  isSuperAdmin?: boolean;
+  isBanned?: boolean;
+  isSuspended?: boolean;
+  /** @nullable */
+  currentPlan?: string | null;
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  company?: string | null;
+  scansUsed?: number;
+  scansCompleted?: number;
   createdAt: string;
 }
 
@@ -206,6 +218,12 @@ export interface AdminUser {
   email: string;
   credits: number;
   totalScans: number;
+  role?: string;
+  /** @nullable */
+  plan?: string | null;
+  isVerified?: boolean;
+  isBanned?: boolean;
+  isSuspended?: boolean;
   createdAt: string;
 }
 
@@ -227,7 +245,245 @@ export interface TeamMemberInput {
   email: string;
 }
 
+export interface MetricPoint {
+  label: string;
+  value: number;
+}
+
+export interface PricingPlan {
+  id: string;
+  name: string;
+  price: number;
+  /** @nullable */
+  headline?: string | null;
+  /** @nullable */
+  description?: string | null;
+  features: string[];
+  popular: boolean;
+  sortOrder: number;
+}
+
+export interface PricingPlanInput {
+  name: string;
+  price: number;
+  /** @nullable */
+  headline?: string | null;
+  /** @nullable */
+  description?: string | null;
+  features: string[];
+  popular?: boolean;
+}
+
+export interface CreateTicketInput {
+  name: string;
+  email: string;
+  subject: string;
+  /** @nullable */
+  websiteUrl?: string | null;
+  message: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  /** @nullable */
+  userId?: number | null;
+  name: string;
+  email: string;
+  subject: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketSummary {
+  id: string;
+  subject: string;
+  status: string;
+  priority: string;
+  /** @nullable */
+  preview?: string | null;
+  userName: string;
+  userEmail: string;
+  messageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketMessage {
+  id: string;
+  ticketId: string;
+  senderRole: string;
+  /** @nullable */
+  senderName?: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface TicketMessageInput {
+  body: string;
+}
+
+export interface TicketThread {
+  ticket: SupportTicket;
+  messages: TicketMessage[];
+}
+
+export interface UpdateTicketInput {
+  /** @nullable */
+  status?: string | null;
+  /** @nullable */
+  priority?: string | null;
+}
+
+export interface Notification {
+  id: number;
+  type: string;
+  title: string;
+  /** @nullable */
+  body?: string | null;
+  /** @nullable */
+  link?: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface UpdateProfileInput {
+  name: string;
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  company?: string | null;
+}
+
+export interface AdminAnalytics {
+  totalUsers: number;
+  activeUsers: number;
+  totalScans: number;
+  completedScans: number;
+  pendingScans: number;
+  revenue: number;
+  ticketsOpen: number;
+  ticketsClosed: number;
+  userGrowth: MetricPoint[];
+  scanActivity: MetricPoint[];
+  revenueGrowth: MetricPoint[];
+  planDistribution: MetricPoint[];
+}
+
+export interface AdminScan {
+  id: string;
+  /** @nullable */
+  userId?: number | null;
+  /** @nullable */
+  userName?: string | null;
+  /** @nullable */
+  userEmail?: string | null;
+  websiteUrl: string;
+  /** @nullable */
+  companyName?: string | null;
+  plan: string;
+  status: string;
+  /** @nullable */
+  reportUrl?: string | null;
+  createdAt: string;
+}
+
+export interface AdminUserDetail {
+  id: number;
+  name: string;
+  email: string;
+  credits: number;
+  role: string;
+  /** @nullable */
+  plan?: string | null;
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  company?: string | null;
+  isVerified?: boolean;
+  isBanned?: boolean;
+  isSuspended?: boolean;
+  scansUsed?: number;
+  scansCompleted?: number;
+  createdAt: string;
+  scans: AdminScan[];
+  reports: Report[];
+}
+
+export interface UpdateUserPlanInput {
+  plan: string;
+  /** @nullable */
+  credits?: number | null;
+}
+
+export type UserActionInputAction = typeof UserActionInputAction[keyof typeof UserActionInputAction];
+
+
+export const UserActionInputAction = {
+  ban: 'ban',
+  unban: 'unban',
+  suspend: 'suspend',
+  unsuspend: 'unsuspend',
+  verify: 'verify',
+} as const;
+
+export interface UserActionInput {
+  action: UserActionInputAction;
+}
+
+export interface AdminSummary {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+export type AddAdminInputRole = typeof AddAdminInputRole[keyof typeof AddAdminInputRole];
+
+
+export const AddAdminInputRole = {
+  admin: 'admin',
+  super_admin: 'super_admin',
+} as const;
+
+export interface AddAdminInput {
+  email: string;
+  role: AddAdminInputRole;
+}
+
+export interface ScanStatusInput {
+  status: string;
+}
+
+export interface ReassignScanInput {
+  userId: number;
+}
+
+export interface UploadReportInput {
+  pdfUrl: string;
+}
+
+export interface AuditLog {
+  id: number;
+  /** @nullable */
+  actorEmail?: string | null;
+  action: string;
+  /** @nullable */
+  targetType?: string | null;
+  /** @nullable */
+  targetId?: string | null;
+  /** @nullable */
+  details?: string | null;
+  createdAt: string;
+}
+
 export type GetAdminUsersParams = {
 search?: string;
+};
+
+export type GetAdminTicketsParams = {
+status?: string;
 };
 

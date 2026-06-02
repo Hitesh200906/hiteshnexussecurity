@@ -5,18 +5,27 @@
  * Nexus Security API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminScan } from './adminScan';
+import type { Report } from './report';
 
-export interface AdminUser {
+export interface AdminUserDetail {
   id: number;
   name: string;
   email: string;
   credits: number;
-  totalScans: number;
-  role?: string;
+  role: string;
   /** @nullable */
   plan?: string | null;
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  company?: string | null;
   isVerified?: boolean;
   isBanned?: boolean;
   isSuspended?: boolean;
+  scansUsed?: number;
+  scansCompleted?: number;
   createdAt: string;
+  scans: AdminScan[];
+  reports: Report[];
 }

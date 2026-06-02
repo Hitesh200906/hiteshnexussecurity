@@ -640,6 +640,584 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /pricing-plans:
+    get:
+      operationId: getPricingPlans
+      tags: [pricing]
+      summary: Public pricing plans (DB-driven)
+      responses:
+        "200":
+          description: List of pricing plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PricingPlan"
+
+  /support/tickets:
+    post:
+      operationId: createSupportTicket
+      tags: [support]
+      summary: Create a support ticket (from contact form)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTicketInput"
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicket"
+
+  /my/tickets:
+    get:
+      operationId: getMyTickets
+      tags: [support]
+      summary: List the current user's support tickets
+      responses:
+        "200":
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TicketSummary"
+
+  /my/tickets/{ticketId}:
+    get:
+      operationId: getMyTicket
+      tags: [support]
+      summary: Get one of the current user's tickets with its messages
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ticket thread
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketThread"
+
+  /my/tickets/{ticketId}/messages:
+    post:
+      operationId: postMyTicketMessage
+      tags: [support]
+      summary: Add a message to one of the current user's tickets
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketMessageInput"
+      responses:
+        "201":
+          description: Message added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketMessage"
+
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: List the current user's notifications
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{notificationId}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: Marked all read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /profile:
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update the current user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /admin/analytics:
+    get:
+      operationId: getAdminAnalytics
+      tags: [admin]
+      summary: Admin analytics overview (cards + chart series)
+      responses:
+        "200":
+          description: Analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAnalytics"
+
+  /admin/users/{userId}:
+    get:
+      operationId: getAdminUser
+      tags: [admin]
+      summary: Get a single user's detail with scans and reports
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+
+  /admin/users/{userId}/plan:
+    post:
+      operationId: updateUserPlan
+      tags: [admin]
+      summary: Upgrade or downgrade a user's plan
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserPlanInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{userId}/action:
+    post:
+      operationId: adminUserAction
+      tags: [admin]
+      summary: Ban, unban, suspend, unsuspend or verify a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserActionInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{userId}/reset-password:
+    post:
+      operationId: adminResetUserPassword
+      tags: [admin]
+      summary: Send a password reset code to a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reset code sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/admins:
+    get:
+      operationId: getAdmins
+      tags: [admin]
+      summary: List admins (super admin only)
+      responses:
+        "200":
+          description: List of admins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminSummary"
+    post:
+      operationId: addAdmin
+      tags: [admin]
+      summary: Grant admin or super admin access (super admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddAdminInput"
+      responses:
+        "200":
+          description: Admin added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSummary"
+
+  /admin/admins/{userId}:
+    delete:
+      operationId: removeAdmin
+      tags: [admin]
+      summary: Revoke admin access (super admin only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Admin removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/tickets:
+    get:
+      operationId: getAdminTickets
+      tags: [admin]
+      summary: List support tickets
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TicketSummary"
+
+  /admin/tickets/{ticketId}:
+    get:
+      operationId: getAdminTicket
+      tags: [admin]
+      summary: Get a ticket thread
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ticket thread
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketThread"
+    patch:
+      operationId: updateTicket
+      tags: [admin]
+      summary: Change a ticket's status or priority
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTicketInput"
+      responses:
+        "200":
+          description: Updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicket"
+
+  /admin/tickets/{ticketId}/messages:
+    post:
+      operationId: postAdminTicketMessage
+      tags: [admin]
+      summary: Reply to a ticket as an admin
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketMessageInput"
+      responses:
+        "201":
+          description: Reply added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketMessage"
+
+  /admin/scans:
+    get:
+      operationId: getAdminScans
+      tags: [admin]
+      summary: List all scans for management
+      responses:
+        "200":
+          description: List of scans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminScan"
+
+  /admin/scans/{scanId}/status:
+    post:
+      operationId: updateScanStatus
+      tags: [admin]
+      summary: Mark a scan complete or failed
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanStatusInput"
+      responses:
+        "200":
+          description: Updated scan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminScan"
+
+  /admin/scans/{scanId}/reassign:
+    post:
+      operationId: reassignScan
+      tags: [admin]
+      summary: Reassign a scan to another user
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReassignScanInput"
+      responses:
+        "200":
+          description: Updated scan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminScan"
+
+  /admin/scans/{scanId}/report:
+    post:
+      operationId: uploadScanReport
+      tags: [admin]
+      summary: Upload / link a report to a scan
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadReportInput"
+      responses:
+        "200":
+          description: Report linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  /admin/scans/{scanId}:
+    delete:
+      operationId: deleteScan
+      tags: [admin]
+      summary: Delete a scan
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scan deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/reports:
+    get:
+      operationId: getAdminReports
+      tags: [admin]
+      summary: List all reports
+      responses:
+        "200":
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+
+  /admin/pricing-plans:
+    get:
+      operationId: getAdminPricingPlans
+      tags: [admin]
+      summary: List pricing plans (super admin only)
+      responses:
+        "200":
+          description: List of pricing plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PricingPlan"
+
+  /admin/pricing-plans/{planId}:
+    put:
+      operationId: updatePricingPlan
+      tags: [admin]
+      summary: Update a pricing plan (super admin only)
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PricingPlanInput"
+      responses:
+        "200":
+          description: Updated plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PricingPlan"
+
+  /admin/audit-logs:
+    get:
+      operationId: getAuditLogs
+      tags: [admin]
+      summary: List audit logs (super admin only)
+      responses:
+        "200":
+          description: List of audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
 components:
   schemas:
     HealthStatus:
@@ -689,6 +1267,24 @@ components:
           type: integer
         isAdmin:
           type: boolean
+        role:
+          type: string
+        isSuperAdmin:
+          type: boolean
+        isBanned:
+          type: boolean
+        isSuspended:
+          type: boolean
+        currentPlan:
+          type: ["string", "null"]
+        title:
+          type: ["string", "null"]
+        company:
+          type: ["string", "null"]
+        scansUsed:
+          type: integer
+        scansCompleted:
+          type: integer
         createdAt:
           type: string
       required:
@@ -1031,6 +1627,16 @@ components:
           type: integer
         totalScans:
           type: integer
+        role:
+          type: string
+        plan:
+          type: ["string", "null"]
+        isVerified:
+          type: boolean
+        isBanned:
+          type: boolean
+        isSuspended:
+          type: boolean
         createdAt:
           type: string
       required:
@@ -1078,3 +1684,461 @@ components:
           type: string
       required:
         - email
+
+    MetricPoint:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+      required:
+        - label
+        - value
+
+    PricingPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: integer
+        headline:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        features:
+          type: array
+          items:
+            type: string
+        popular:
+          type: boolean
+        sortOrder:
+          type: integer
+      required:
+        - id
+        - name
+        - price
+        - features
+        - popular
+        - sortOrder
+
+    PricingPlanInput:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: integer
+        headline:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        features:
+          type: array
+          items:
+            type: string
+        popular:
+          type: boolean
+      required:
+        - name
+        - price
+        - features
+
+    CreateTicketInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        subject:
+          type: string
+        websiteUrl:
+          type: ["string", "null"]
+        message:
+          type: string
+      required:
+        - name
+        - email
+        - subject
+        - message
+
+    SupportTicket:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        email:
+          type: string
+        subject:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - subject
+        - status
+        - priority
+        - createdAt
+        - updatedAt
+
+    TicketSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        subject:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+        preview:
+          type: ["string", "null"]
+        userName:
+          type: string
+        userEmail:
+          type: string
+        messageCount:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - subject
+        - status
+        - priority
+        - userName
+        - userEmail
+        - messageCount
+        - createdAt
+        - updatedAt
+
+    TicketMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        ticketId:
+          type: string
+        senderRole:
+          type: string
+        senderName:
+          type: ["string", "null"]
+        body:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - ticketId
+        - senderRole
+        - body
+        - createdAt
+
+    TicketMessageInput:
+      type: object
+      properties:
+        body:
+          type: string
+      required:
+        - body
+
+    TicketThread:
+      type: object
+      properties:
+        ticket:
+          $ref: "#/components/schemas/SupportTicket"
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/TicketMessage"
+      required:
+        - ticket
+        - messages
+
+    UpdateTicketInput:
+      type: object
+      properties:
+        status:
+          type: ["string", "null"]
+        priority:
+          type: ["string", "null"]
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        body:
+          type: ["string", "null"]
+        link:
+          type: ["string", "null"]
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - type
+        - title
+        - isRead
+        - createdAt
+
+    UpdateProfileInput:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: ["string", "null"]
+        company:
+          type: ["string", "null"]
+      required:
+        - name
+
+    AdminAnalytics:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        activeUsers:
+          type: integer
+        totalScans:
+          type: integer
+        completedScans:
+          type: integer
+        pendingScans:
+          type: integer
+        revenue:
+          type: integer
+        ticketsOpen:
+          type: integer
+        ticketsClosed:
+          type: integer
+        userGrowth:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricPoint"
+        scanActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricPoint"
+        revenueGrowth:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricPoint"
+        planDistribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricPoint"
+      required:
+        - totalUsers
+        - activeUsers
+        - totalScans
+        - completedScans
+        - pendingScans
+        - revenue
+        - ticketsOpen
+        - ticketsClosed
+        - userGrowth
+        - scanActivity
+        - revenueGrowth
+        - planDistribution
+
+    AdminUserDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        credits:
+          type: integer
+        role:
+          type: string
+        plan:
+          type: ["string", "null"]
+        title:
+          type: ["string", "null"]
+        company:
+          type: ["string", "null"]
+        isVerified:
+          type: boolean
+        isBanned:
+          type: boolean
+        isSuspended:
+          type: boolean
+        scansUsed:
+          type: integer
+        scansCompleted:
+          type: integer
+        createdAt:
+          type: string
+        scans:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminScan"
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/Report"
+      required:
+        - id
+        - name
+        - email
+        - credits
+        - role
+        - createdAt
+        - scans
+        - reports
+
+    UpdateUserPlanInput:
+      type: object
+      properties:
+        plan:
+          type: string
+        credits:
+          type: ["integer", "null"]
+      required:
+        - plan
+
+    UserActionInput:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [ban, unban, suspend, unsuspend, verify]
+      required:
+        - action
+
+    AdminSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - role
+        - createdAt
+
+    AddAdminInput:
+      type: object
+      properties:
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, super_admin]
+      required:
+        - email
+        - role
+
+    AdminScan:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: ["integer", "null"]
+        userName:
+          type: ["string", "null"]
+        userEmail:
+          type: ["string", "null"]
+        websiteUrl:
+          type: string
+        companyName:
+          type: ["string", "null"]
+        plan:
+          type: string
+        status:
+          type: string
+        reportUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - websiteUrl
+        - plan
+        - status
+        - createdAt
+
+    ScanStatusInput:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ReassignScanInput:
+      type: object
+      properties:
+        userId:
+          type: integer
+      required:
+        - userId
+
+    UploadReportInput:
+      type: object
+      properties:
+        pdfUrl:
+          type: string
+      required:
+        - pdfUrl
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        actorEmail:
+          type: ["string", "null"]
+        action:
+          type: string
+        targetType:
+          type: ["string", "null"]
+        targetId:
+          type: ["string", "null"]
+        details:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - action
+        - createdAt

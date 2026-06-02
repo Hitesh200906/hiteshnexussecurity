@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { useGetPlanPrices, useRequestScan, useVerifyCode, useGetStatus } from "@workspace/api-client-react";
+import { useRequestScan, useVerifyCode, useGetStatus, useGetPricingPlans } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,7 +84,7 @@ const PLAN_CARDS: Record<ScanRequestPlan, PlanCard> = {
 const HIGHLIGHTED_FEATURES = new Set(["Bug Detector"]);
 
 export function PricingPlans() {
-  const { data: plans } = useGetPlanPrices();
+  const { data: pricingPlans } = useGetPricingPlans();
   const { data: status } = useGetStatus();
   const [selectedPlan, setSelectedPlan] = useState<ScanRequestPlan | null>(null);
   const [verificationMethod, setVerificationMethod] = useState<ScanRequestVerificationMethod | null>(null);
@@ -171,15 +171,28 @@ export function PricingPlans() {
     }
   };
 
-  const FALLBACK_PRICES: Record<ScanRequestPlan, number> = { basic: 999, advanced: 2999, protection: 4999 };
-  const planPrice = (plan: ScanRequestPlan): number =>
-    plans ? (plans as Record<ScanRequestPlan, number>)[plan] : FALLBACK_PRICES[plan];
+  const PLAN_ORDER: ScanRequestPlan[] = ["basic", "advanced", "protection"];
+  const cards = PLAN_ORDER.map((planKey) => {
+    const fallback = PLAN_CARDS[planKey];
+    const dbPlan = pricingPlans?.find((p) => p.id === planKey);
+    const priceValue = dbPlan?.price;
+    return {
+      planKey,
+      name: dbPlan?.name ?? fallback.name,
+      priceLabel: priceValue != null ? String(priceValue) : fallback.price,
+      period: priceValue != null ? (priceValue === 1 ? "credit / scan" : "credits / scan") : fallback.period,
+      description: dbPlan?.description ?? fallback.description,
+      features: dbPlan && dbPlan.features.length ? dbPlan.features : fallback.features,
+      popular: dbPlan?.popular ?? fallback.popular ?? false,
+    };
+  });
+  const selectedCard = cards.find((c) => c.planKey === selectedPlan);
 
   return (
     <div className="container mx-auto px-4">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-stretch">
-        {(["basic", "advanced", "protection"] as ScanRequestPlan[]).map((planKey, i) => {
-          const card = PLAN_CARDS[planKey];
+        {cards.map((card, i) => {
+          const planKey = card.planKey;
           const isSelected = selectedPlan === planKey;
 
           return (
@@ -213,7 +226,7 @@ export function PricingPlans() {
               </div>
 
               <div className="flex items-end gap-1.5 mb-4">
-                <span className="text-5xl font-bold text-foreground leading-none">{card.price}</span>
+                <span className="text-5xl font-bold text-foreground leading-none">{card.priceLabel}</span>
                 {card.period && <span className="text-muted-foreground text-sm mb-1">{card.period}</span>}
               </div>
 
@@ -239,14 +252,14 @@ export function PricingPlans() {
 
               <Button
                 data-testid={`button-select-plan-${planKey}`}
-                onClick={() => (card.contact ? setLocation("/contact") : handleSelectPlan(planKey))}
+                onClick={() => handleSelectPlan(planKey)}
                 className={`w-full rounded-full h-12 text-sm font-semibold ${
                   card.popular
                     ? "bg-white text-black hover:bg-white/90"
                     : "bg-white/5 border border-white/15 text-foreground hover:bg-white/10 hover:border-white/25"
                 }`}
               >
-                {isSelected ? "Selected" : card.cta}
+                {isSelected ? "Selected" : "Get Started"}
               </Button>
             </motion.div>
           );
@@ -273,7 +286,7 @@ export function PricingPlans() {
                   <div>
                     <h3 className="text-xl font-bold text-foreground">Scan Request</h3>
                     <p className="text-xs text-primary font-mono mt-0.5 uppercase tracking-[0.2em]">
-                      Plan: {PLAN_CARDS[selectedPlan].name} — ₹{planPrice(selectedPlan).toLocaleString("en-IN")} / scan
+                      Plan: {selectedCard?.name ?? selectedPlan} — {selectedCard?.priceLabel} {selectedCard?.period}
                     </p>
                   </div>
                 </div>

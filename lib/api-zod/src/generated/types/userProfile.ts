@@ -12,5 +12,17 @@ export interface UserProfile {
   email: string;
   credits: number;
   isAdmin: boolean;
+  role?: string;
+  isSuperAdmin?: boolean;
+  isBanned?: boolean;
+  isSuspended?: boolean;
+  /** @nullable */
+  currentPlan?: string | null;
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  company?: string | null;
+  scansUsed?: number;
+  scansCompleted?: number;
   createdAt: string;
 }

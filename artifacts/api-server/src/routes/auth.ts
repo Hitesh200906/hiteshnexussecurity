@@ -36,14 +36,28 @@ function publicUser(user: {
   email: string;
   credits: number;
   isAdmin: boolean;
+  role?: string | null;
+  isBanned?: boolean | null;
+  isSuspended?: boolean | null;
+  currentPlan?: string | null;
+  scansUsed?: number | null;
+  scansCompleted?: number | null;
   createdAt: Date;
 }) {
+  const role = user.role ?? (user.isAdmin ? "admin" : "user");
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     credits: user.credits,
-    isAdmin: user.isAdmin,
+    isAdmin: user.isAdmin || role === "admin" || role === "super_admin",
+    role,
+    isSuperAdmin: role === "super_admin",
+    isBanned: user.isBanned ?? false,
+    isSuspended: user.isSuspended ?? false,
+    currentPlan: user.currentPlan ?? null,
+    scansUsed: user.scansUsed ?? 0,
+    scansCompleted: user.scansCompleted ?? 0,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -280,6 +294,16 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   const { ok, needsRehash } = await verifyPassword(password, user?.passwordHash);
   if (!user || !ok) {
     res.status(401).json({ error: "Invalid email or password" });
+    return;
+  }
+
+  if (user.isBanned) {
+    res.status(403).json({ error: "This account has been banned. Contact support for assistance." });
+    return;
+  }
+
+  if (user.isSuspended) {
+    res.status(403).json({ error: "This account is suspended. Contact support for assistance." });
     return;
   }
 

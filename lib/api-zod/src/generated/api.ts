@@ -29,6 +29,15 @@ export const GetStatusResponse = zod.object({
   "email": zod.string(),
   "credits": zod.number(),
   "isAdmin": zod.boolean(),
+  "role": zod.string().optional(),
+  "isSuperAdmin": zod.boolean().optional(),
+  "isBanned": zod.boolean().optional(),
+  "isSuspended": zod.boolean().optional(),
+  "currentPlan": zod.string().nullish(),
+  "title": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "scansUsed": zod.number().optional(),
+  "scansCompleted": zod.number().optional(),
   "createdAt": zod.string()
 }).optional()
 })
@@ -75,6 +84,15 @@ export const LoginResponse = zod.object({
   "email": zod.string(),
   "credits": zod.number(),
   "isAdmin": zod.boolean(),
+  "role": zod.string().optional(),
+  "isSuperAdmin": zod.boolean().optional(),
+  "isBanned": zod.boolean().optional(),
+  "isSuspended": zod.boolean().optional(),
+  "currentPlan": zod.string().nullish(),
+  "title": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "scansUsed": zod.number().optional(),
+  "scansCompleted": zod.number().optional(),
   "createdAt": zod.string()
 })
 })
@@ -304,6 +322,11 @@ export const GetAdminUsersResponseItem = zod.object({
   "email": zod.string(),
   "credits": zod.number(),
   "totalScans": zod.number(),
+  "role": zod.string().optional(),
+  "plan": zod.string().nullish(),
+  "isVerified": zod.boolean().optional(),
+  "isBanned": zod.boolean().optional(),
+  "isSuspended": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 export const GetAdminUsersResponse = zod.array(GetAdminUsersResponseItem)
@@ -326,6 +349,11 @@ export const AddUserCreditsResponse = zod.object({
   "email": zod.string(),
   "credits": zod.number(),
   "totalScans": zod.number(),
+  "role": zod.string().optional(),
+  "plan": zod.string().nullish(),
+  "isVerified": zod.boolean().optional(),
+  "isBanned": zod.boolean().optional(),
+  "isSuspended": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 
@@ -412,5 +440,611 @@ export const UpdatePlanPricesResponse = zod.object({
   "advanced": zod.number(),
   "protection": zod.number()
 })
+
+
+/**
+ * @summary Public pricing plans (DB-driven)
+ */
+export const GetPricingPlansResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "headline": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "features": zod.array(zod.string()),
+  "popular": zod.boolean(),
+  "sortOrder": zod.number()
+})
+export const GetPricingPlansResponse = zod.array(GetPricingPlansResponseItem)
+
+
+/**
+ * @summary Create a support ticket (from contact form)
+ */
+export const CreateSupportTicketBody = zod.object({
+  "name": zod.string(),
+  "email": zod.string(),
+  "subject": zod.string(),
+  "websiteUrl": zod.string().nullish(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List the current user's support tickets
+ */
+export const GetMyTicketsResponseItem = zod.object({
+  "id": zod.string(),
+  "subject": zod.string(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "preview": zod.string().nullish(),
+  "userName": zod.string(),
+  "userEmail": zod.string(),
+  "messageCount": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const GetMyTicketsResponse = zod.array(GetMyTicketsResponseItem)
+
+
+/**
+ * @summary Get one of the current user's tickets with its messages
+ */
+export const GetMyTicketParams = zod.object({
+  "ticketId": zod.coerce.string()
+})
+
+export const GetMyTicketResponse = zod.object({
+  "ticket": zod.object({
+  "id": zod.string(),
+  "userId": zod.number().nullish(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "subject": zod.string(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}),
+  "messages": zod.array(zod.object({
+  "id": zod.string(),
+  "ticketId": zod.string(),
+  "senderRole": zod.string(),
+  "senderName": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Add a message to one of the current user's tickets
+ */
+export const PostMyTicketMessageParams = zod.object({
+  "ticketId": zod.coerce.string()
+})
+
+export const PostMyTicketMessageBody = zod.object({
+  "body": zod.string()
+})
+
+
+/**
+ * @summary List the current user's notifications
+ */
+export const GetNotificationsResponseItem = zod.object({
+  "id": zod.number(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "body": zod.string().nullish(),
+  "link": zod.string().nullish(),
+  "isRead": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const GetNotificationsResponse = zod.array(GetNotificationsResponseItem)
+
+
+/**
+ * @summary Mark a notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "notificationId": zod.coerce.number()
+})
+
+export const MarkNotificationReadResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Mark all notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Update the current user's profile
+ */
+export const UpdateProfileBody = zod.object({
+  "name": zod.string(),
+  "title": zod.string().nullish(),
+  "company": zod.string().nullish()
+})
+
+export const UpdateProfileResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "credits": zod.number(),
+  "isAdmin": zod.boolean(),
+  "role": zod.string().optional(),
+  "isSuperAdmin": zod.boolean().optional(),
+  "isBanned": zod.boolean().optional(),
+  "isSuspended": zod.boolean().optional(),
+  "currentPlan": zod.string().nullish(),
+  "title": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "scansUsed": zod.number().optional(),
+  "scansCompleted": zod.number().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Admin analytics overview (cards + chart series)
+ */
+export const GetAdminAnalyticsResponse = zod.object({
+  "totalUsers": zod.number(),
+  "activeUsers": zod.number(),
+  "totalScans": zod.number(),
+  "completedScans": zod.number(),
+  "pendingScans": zod.number(),
+  "revenue": zod.number(),
+  "ticketsOpen": zod.number(),
+  "ticketsClosed": zod.number(),
+  "userGrowth": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})),
+  "scanActivity": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})),
+  "revenueGrowth": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})),
+  "planDistribution": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+}))
+})
+
+
+/**
+ * @summary Get a single user's detail with scans and reports
+ */
+export const GetAdminUserParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const GetAdminUserResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "credits": zod.number(),
+  "role": zod.string(),
+  "plan": zod.string().nullish(),
+  "title": zod.string().nullish(),
+  "company": zod.string().nullish(),
+  "isVerified": zod.boolean().optional(),
+  "isBanned": zod.boolean().optional(),
+  "isSuspended": zod.boolean().optional(),
+  "scansUsed": zod.number().optional(),
+  "scansCompleted": zod.number().optional(),
+  "createdAt": zod.string(),
+  "scans": zod.array(zod.object({
+  "id": zod.string(),
+  "userId": zod.number().nullish(),
+  "userName": zod.string().nullish(),
+  "userEmail": zod.string().nullish(),
+  "websiteUrl": zod.string(),
+  "companyName": zod.string().nullish(),
+  "plan": zod.string(),
+  "status": zod.string(),
+  "reportUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "reports": zod.array(zod.object({
+  "id": zod.string(),
+  "scanId": zod.string(),
+  "userId": zod.number().nullish(),
+  "companyName": zod.string().nullish(),
+  "websiteUrl": zod.string().nullish(),
+  "plan": zod.string().nullish(),
+  "severitySummary": zod.record(zod.string(), zod.unknown()).nullish(),
+  "pdfUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Upgrade or downgrade a user's plan
+ */
+export const UpdateUserPlanParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const UpdateUserPlanBody = zod.object({
+  "plan": zod.string(),
+  "credits": zod.number().nullish()
+})
+
+export const UpdateUserPlanResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "credits": zod.number(),
+  "totalScans": zod.number(),
+  "role": zod.string().optional(),
+  "plan": zod.string().nullish(),
+  "isVerified": zod.boolean().optional(),
+  "isBanned": zod.boolean().optional(),
+  "isSuspended": zod.boolean().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Ban, unban, suspend, unsuspend or verify a user
+ */
+export const AdminUserActionParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const AdminUserActionBody = zod.object({
+  "action": zod.enum(['ban', 'unban', 'suspend', 'unsuspend', 'verify'])
+})
+
+export const AdminUserActionResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "credits": zod.number(),
+  "totalScans": zod.number(),
+  "role": zod.string().optional(),
+  "plan": zod.string().nullish(),
+  "isVerified": zod.boolean().optional(),
+  "isBanned": zod.boolean().optional(),
+  "isSuspended": zod.boolean().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Send a password reset code to a user
+ */
+export const AdminResetUserPasswordParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const AdminResetUserPasswordResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List admins (super admin only)
+ */
+export const GetAdminsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "createdAt": zod.string()
+})
+export const GetAdminsResponse = zod.array(GetAdminsResponseItem)
+
+
+/**
+ * @summary Grant admin or super admin access (super admin only)
+ */
+export const AddAdminBody = zod.object({
+  "email": zod.string(),
+  "role": zod.enum(['admin', 'super_admin'])
+})
+
+export const AddAdminResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Revoke admin access (super admin only)
+ */
+export const RemoveAdminParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const RemoveAdminResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List support tickets
+ */
+export const GetAdminTicketsQueryParams = zod.object({
+  "status": zod.coerce.string().optional()
+})
+
+export const GetAdminTicketsResponseItem = zod.object({
+  "id": zod.string(),
+  "subject": zod.string(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "preview": zod.string().nullish(),
+  "userName": zod.string(),
+  "userEmail": zod.string(),
+  "messageCount": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const GetAdminTicketsResponse = zod.array(GetAdminTicketsResponseItem)
+
+
+/**
+ * @summary Get a ticket thread
+ */
+export const GetAdminTicketParams = zod.object({
+  "ticketId": zod.coerce.string()
+})
+
+export const GetAdminTicketResponse = zod.object({
+  "ticket": zod.object({
+  "id": zod.string(),
+  "userId": zod.number().nullish(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "subject": zod.string(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}),
+  "messages": zod.array(zod.object({
+  "id": zod.string(),
+  "ticketId": zod.string(),
+  "senderRole": zod.string(),
+  "senderName": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Change a ticket's status or priority
+ */
+export const UpdateTicketParams = zod.object({
+  "ticketId": zod.coerce.string()
+})
+
+export const UpdateTicketBody = zod.object({
+  "status": zod.string().nullish(),
+  "priority": zod.string().nullish()
+})
+
+export const UpdateTicketResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.number().nullish(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "subject": zod.string(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Reply to a ticket as an admin
+ */
+export const PostAdminTicketMessageParams = zod.object({
+  "ticketId": zod.coerce.string()
+})
+
+export const PostAdminTicketMessageBody = zod.object({
+  "body": zod.string()
+})
+
+
+/**
+ * @summary List all scans for management
+ */
+export const GetAdminScansResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.number().nullish(),
+  "userName": zod.string().nullish(),
+  "userEmail": zod.string().nullish(),
+  "websiteUrl": zod.string(),
+  "companyName": zod.string().nullish(),
+  "plan": zod.string(),
+  "status": zod.string(),
+  "reportUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const GetAdminScansResponse = zod.array(GetAdminScansResponseItem)
+
+
+/**
+ * @summary Mark a scan complete or failed
+ */
+export const UpdateScanStatusParams = zod.object({
+  "scanId": zod.coerce.string()
+})
+
+export const UpdateScanStatusBody = zod.object({
+  "status": zod.string()
+})
+
+export const UpdateScanStatusResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.number().nullish(),
+  "userName": zod.string().nullish(),
+  "userEmail": zod.string().nullish(),
+  "websiteUrl": zod.string(),
+  "companyName": zod.string().nullish(),
+  "plan": zod.string(),
+  "status": zod.string(),
+  "reportUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Reassign a scan to another user
+ */
+export const ReassignScanParams = zod.object({
+  "scanId": zod.coerce.string()
+})
+
+export const ReassignScanBody = zod.object({
+  "userId": zod.number()
+})
+
+export const ReassignScanResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.number().nullish(),
+  "userName": zod.string().nullish(),
+  "userEmail": zod.string().nullish(),
+  "websiteUrl": zod.string(),
+  "companyName": zod.string().nullish(),
+  "plan": zod.string(),
+  "status": zod.string(),
+  "reportUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Upload / link a report to a scan
+ */
+export const UploadScanReportParams = zod.object({
+  "scanId": zod.coerce.string()
+})
+
+export const UploadScanReportBody = zod.object({
+  "pdfUrl": zod.string()
+})
+
+export const UploadScanReportResponse = zod.object({
+  "id": zod.string(),
+  "scanId": zod.string(),
+  "userId": zod.number().nullish(),
+  "companyName": zod.string().nullish(),
+  "websiteUrl": zod.string().nullish(),
+  "plan": zod.string().nullish(),
+  "severitySummary": zod.record(zod.string(), zod.unknown()).nullish(),
+  "pdfUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a scan
+ */
+export const DeleteScanParams = zod.object({
+  "scanId": zod.coerce.string()
+})
+
+export const DeleteScanResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List all reports
+ */
+export const GetAdminReportsResponseItem = zod.object({
+  "id": zod.string(),
+  "scanId": zod.string(),
+  "userId": zod.number().nullish(),
+  "companyName": zod.string().nullish(),
+  "websiteUrl": zod.string().nullish(),
+  "plan": zod.string().nullish(),
+  "severitySummary": zod.record(zod.string(), zod.unknown()).nullish(),
+  "pdfUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const GetAdminReportsResponse = zod.array(GetAdminReportsResponseItem)
+
+
+/**
+ * @summary List pricing plans (super admin only)
+ */
+export const GetAdminPricingPlansResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "headline": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "features": zod.array(zod.string()),
+  "popular": zod.boolean(),
+  "sortOrder": zod.number()
+})
+export const GetAdminPricingPlansResponse = zod.array(GetAdminPricingPlansResponseItem)
+
+
+/**
+ * @summary Update a pricing plan (super admin only)
+ */
+export const UpdatePricingPlanParams = zod.object({
+  "planId": zod.coerce.string()
+})
+
+export const UpdatePricingPlanBody = zod.object({
+  "name": zod.string(),
+  "price": zod.number(),
+  "headline": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "features": zod.array(zod.string()),
+  "popular": zod.boolean().optional()
+})
+
+export const UpdatePricingPlanResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "headline": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "features": zod.array(zod.string()),
+  "popular": zod.boolean(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary List audit logs (super admin only)
+ */
+export const GetAuditLogsResponseItem = zod.object({
+  "id": zod.number(),
+  "actorEmail": zod.string().nullish(),
+  "action": zod.string(),
+  "targetType": zod.string().nullish(),
+  "targetId": zod.string().nullish(),
+  "details": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const GetAuditLogsResponse = zod.array(GetAuditLogsResponseItem)
 
 

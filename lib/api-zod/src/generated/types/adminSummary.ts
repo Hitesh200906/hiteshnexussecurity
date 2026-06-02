@@ -6,17 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdminUser {
+export interface AdminSummary {
   id: number;
   name: string;
   email: string;
-  credits: number;
-  totalScans: number;
-  role?: string;
-  /** @nullable */
-  plan?: string | null;
-  isVerified?: boolean;
-  isBanned?: boolean;
-  isSuspended?: boolean;
+  role: string;
   createdAt: string;
 }

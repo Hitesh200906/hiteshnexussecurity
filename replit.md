@@ -45,6 +45,7 @@ The app deploys as a **single Vercel project** from the repo root (`vercel.json`
 - `SESSION_SECRET`, `BREVO_API_KEY`, `MAIL_DEFAULT_SENDER` — same as Replit.
 - `ADMIN_PASSCODE` — admin gate passcode.
 - `APP_BASE_URL` — public site URL (e.g. `https://your-app.vercel.app`); used to build password-reset and scan-verification links. Falls back to `VERCEL_PROJECT_PRODUCTION_URL` if unset.
+- `CORS_ORIGINS` — comma-separated allowlist of browser origins permitted to make credentialed cross-site requests (e.g. the Vercel frontend origin when the API is hosted separately, like on Render). If unset, the API reflects the request origin (permissive); set it in production to lock down access.
 - `NODE_ENV=production` is set automatically by Vercel (ensures the logger emits plain JSON, not the worker-thread pino-pretty transport).
 
 **Caveat**: the DB layer uses a node-postgres `Pool`. On serverless this is acceptable for low traffic but can exhaust connections at scale — consider `@neondatabase/serverless` later.
@@ -52,7 +53,11 @@ The app deploys as a **single Vercel project** from the repo root (`vercel.json`
 ## Architecture decisions
 
 - Sessions stored in PostgreSQL (no Redis) with httpOnly cookies — simple and reliable
-- Password hashing uses SHA-256 + hardcoded salt (sufficient for demo; upgrade to bcrypt for production)
+- Session cookie is `SameSite=None; Secure` in production (so it works when the frontend and API live on different domains, e.g. Vercel + Render) and `SameSite=Lax` in local dev
+- Password hashing uses bcrypt (`bcryptjs`, cost 12). Legacy SHA-256 hashes are still accepted on login and transparently re-hashed to bcrypt on the next successful sign-in (`lib/password.ts`)
+- Email verification + password reset are DB-persisted (no in-memory state): `users` stores `verification_code`/`verification_expiry` and `reset_code`/`reset_expiry`; codes are crypto-random 6 digits with a 15-minute TTL
+- `is_verified` defaults to TRUE in the schema so pre-existing accounts created before the verification flow stay loginable; new `/auth/register` rows are explicitly inserted with `is_verified=false`
+- `/auth/register` surfaces email-delivery failures (502) so users aren't left stuck without a code; `/auth/resend-verification` and `/auth/forgot-password` respond generically to avoid account enumeration
 - Plan prices stored in `plan_config` table as key/value pairs so admin can update without deploys
 - Admin panel requires two-factor entry: must be the admin email account AND enter a passcode
 - Manual code verification stores verificationId in the scan_job row; code check is trust-based (checks website is provided, updates status to "queued")
@@ -60,9 +65,11 @@ The app deploys as a **single Vercel project** from the repo root (`vercel.json`
 ## Product
 
 - **Landing page**: Hero, three scan plans (Basic/Advanced/Protection+), scan submission form with email or manual code ownership verification
-- **Login/Signup**: Tab-based auth with Google OAuth link
+- **Signup → Verify email**: Signup posts to `/auth/register` (pending unverified user + emailed 6-digit code), then redirects to `/verify-email` where the user enters the code (with resend). Session starts only after the code is confirmed.
+- **Login**: Verified users only. Unverified users get a 403 with `needsVerification` and are redirected to `/verify-email`.
+- **Forgot/Reset password**: `/reset-password` is a two-step code flow — request a 6-digit reset code by email, then submit `{email, code, newPassword}`.
 - **Profile dashboard**: Credits balance, scan history, view/download reports
-- **Admin panel**: Passcode-gated, manage plan prices and add credits to users
+- **Admin Control Center**: Sidebar-driven panel (`/admin`) with sections — Overview (analytics), Users, Support (ticket chat), Scans, Reports, Security (passkey self-service), plus super-admin-only sections Admins (admin management), Pricing (edit public plans), and Audit Logs. Entry is gated by the existing passcode/biometric verification step.
 
 ## User preferences
 

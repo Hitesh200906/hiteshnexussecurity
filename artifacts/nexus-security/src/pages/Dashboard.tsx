@@ -1,8 +1,12 @@
-import { useGetStatus, useGetScanStats, useGetScans, useGetReports } from "@workspace/api-client-react";
+import {
+  useGetStatus, useGetScanStats, useGetScans, useGetReports,
+  useGetNotifications, useMarkAllNotificationsRead, useMarkNotificationRead,
+} from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutGrid, ScanSearch, FileText, CreditCard, Settings,
   ShieldCheck, ArrowRight, Download, ArrowUpRight, ScanLine, Activity, CheckCircle2, Loader2,
+  Bell, MessageSquare, User, Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Footer } from "@/components/Footer";
@@ -44,7 +48,20 @@ export default function Dashboard() {
   const { data: stats } = useGetScanStats({ query: { enabled: !!status?.loggedIn, queryKey: ["scan-stats"] } });
   const { data: scans, isLoading: scansLoading, isFetched: scansFetched } = useGetScans({ query: { enabled: !!status?.loggedIn, queryKey: ["scans"] } });
   const { data: reports, isLoading: reportsLoading, isFetched: reportsFetched } = useGetReports({ query: { enabled: !!status?.loggedIn, queryKey: ["reports"] } });
+  const { data: notifications, refetch: refetchNotifications } = useGetNotifications({ query: { enabled: !!status?.loggedIn, queryKey: ["notifications"] } });
+  const markAllRead = useMarkAllNotificationsRead();
+  const markRead = useMarkNotificationRead();
   const [location] = useLocation();
+
+  const unreadCount = (notifications ?? []).filter((n) => !n.isRead).length;
+  const handleMarkAll = async () => {
+    await markAllRead.mutateAsync();
+    refetchNotifications();
+  };
+  const handleMarkOne = async (id: number) => {
+    await markRead.mutateAsync({ notificationId: id });
+    refetchNotifications();
+  };
 
   if (statusLoading) {
     return (
@@ -243,6 +260,89 @@ export default function Dashboard() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick actions + Notifications */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+              <div className="rounded-2xl border border-white/8 bg-[#0c0c0c] p-5">
+                <h3 className="text-base font-semibold text-foreground mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "New Scan", icon: ScanSearch, href: "/pricing" },
+                    { label: "View Reports", icon: FileText, href: "/reports" },
+                    { label: "Support", icon: MessageSquare, href: "/profile#tickets" },
+                    { label: "Profile", icon: User, href: "/profile" },
+                  ].map(({ label, icon: Icon, href }) => (
+                    <Link
+                      key={label}
+                      href={href}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-white/8 bg-black/40 hover:border-primary/30 hover:bg-primary/5 transition-colors group"
+                    >
+                      <div className="w-9 h-9 rounded-lg border border-primary/25 bg-primary/5 flex items-center justify-center shrink-0">
+                        <Icon className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm text-foreground/90 group-hover:text-foreground">{label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/8 bg-[#0c0c0c] p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-primary/70" /> Notifications
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] font-mono bg-primary text-black rounded-full px-2 py-0.5">{unreadCount}</span>
+                    )}
+                  </h3>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAll}
+                      className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      <Check className="w-3 h-3" /> Mark all read
+                    </button>
+                  )}
+                </div>
+                {(notifications ?? []).length === 0 ? (
+                  <div className="py-10 text-center">
+                    <Bell className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">You're all caught up.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                    {(notifications ?? []).slice(0, 8).map((n) => {
+                      const inner = (
+                        <div className="flex items-start gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.isRead ? "bg-white/15" : "bg-primary"}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-foreground/90 truncate">{n.title}</p>
+                            {n.body && <p className="text-xs text-muted-foreground line-clamp-2">{n.body}</p>}
+                            <p className="text-[10px] font-mono text-muted-foreground/60 mt-1">{fmtDate(n.createdAt)}</p>
+                          </div>
+                          {!n.isRead && (
+                            <button
+                              onClick={(e) => { e.preventDefault(); handleMarkOne(n.id); }}
+                              className="text-[10px] text-primary hover:underline shrink-0"
+                            >
+                              Read
+                            </button>
+                          )}
+                        </div>
+                      );
+                      return n.link ? (
+                        <Link key={n.id} href={n.link} className={`block rounded-lg px-3 py-2.5 border transition-colors ${n.isRead ? "border-white/5 bg-transparent" : "border-primary/15 bg-primary/5"}`}>
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div key={n.id} className={`rounded-lg px-3 py-2.5 border ${n.isRead ? "border-white/5" : "border-primary/15 bg-primary/5"}`}>
+                          {inner}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

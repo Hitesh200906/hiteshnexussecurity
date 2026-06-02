@@ -10,6 +10,11 @@ export const usersTable = pgTable("users", {
   googleId: text("google_id"),
   credits: integer("credits").notNull().default(0),
   isAdmin: boolean("is_admin").notNull().default(false),
+  // Role-based access control: user | admin | super_admin.
+  // super_admin gates Admin Management, Pricing Management and Audit Logs.
+  role: text("role").notNull().default("user"),
+  isBanned: boolean("is_banned").notNull().default(false),
+  isSuspended: boolean("is_suspended").notNull().default(false),
   // Email verification. Defaults to true so pre-existing accounts keep working
   // when this column is added; new sign-ups are explicitly inserted as false
   // and flipped to true once the emailed code is confirmed.
@@ -24,6 +29,9 @@ export const usersTable = pgTable("users", {
   scansUsed: integer("scans_used").notNull().default(0),
   scansCompleted: integer("scans_completed").notNull().default(0),
   currentPlan: text("current_plan"),
+  // Profile fields surfaced on the redesigned profile page.
+  title: text("title"),
+  company: text("company"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

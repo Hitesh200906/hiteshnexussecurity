@@ -1,44 +1,48 @@
 import { useState } from "react";
-import {
-  useAdminCheck,
-  useAdminLogin,
-  useGetAdminUsers,
-  useAddUserCredits,
-  useGetPlanPrices,
-  useUpdatePlanPrices,
-} from "@workspace/api-client-react";
+import { useAdminCheck, useAdminLogin, useGetStatus } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Search, Plus, Fingerprint, KeyRound, UserPlus, Trash2, ShieldCheck } from "lucide-react";
+import {
+  ShieldAlert, Fingerprint, KeyRound, Trash2, ShieldCheck,
+  LayoutDashboard, Users, Crown, MessageSquare, ScanLine, FileText, Tag, ScrollText, Lock,
+} from "lucide-react";
+import { AdminOverview } from "@/components/admin/AdminOverview";
+import { AdminUsers } from "@/components/admin/AdminUsers";
+import { AdminAdmins } from "@/components/admin/AdminAdmins";
+import { AdminSupport } from "@/components/admin/AdminSupport";
+import { AdminScans } from "@/components/admin/AdminScans";
+import { AdminReports } from "@/components/admin/AdminReports";
+import { AdminPricing } from "@/components/admin/AdminPricing";
+import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
+
+type SectionId = "overview" | "users" | "admins" | "support" | "scans" | "reports" | "pricing" | "audit" | "security";
+
+const NAV: { id: SectionId; label: string; icon: typeof Users; super?: boolean }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "users", label: "Users", icon: Users },
+  { id: "admins", label: "Admins", icon: Crown, super: true },
+  { id: "support", label: "Support", icon: MessageSquare },
+  { id: "scans", label: "Scans", icon: ScanLine },
+  { id: "reports", label: "Reports", icon: FileText },
+  { id: "pricing", label: "Pricing", icon: Tag, super: true },
+  { id: "audit", label: "Audit Logs", icon: ScrollText, super: true },
+  { id: "security", label: "Security", icon: KeyRound },
+];
 
 export default function Admin() {
   const { data: adminCheck, refetch: refetchAdminCheck } = useAdminCheck();
+  const { data: status } = useGetStatus();
   const adminLogin = useAdminLogin();
-  const { data: planPrices, refetch: refetchPrices } = useGetPlanPrices();
-  const updatePrices = useUpdatePlanPrices();
-  const addUserCredits = useAddUserCredits();
+  const { toast } = useToast();
 
   const [passcode, setPasscode] = useState("");
-  const [search, setSearch] = useState("");
-  const { data: users, refetch: refetchUsers } = useGetAdminUsers(
-    { search },
-    { query: { enabled: !!adminCheck?.adminPanelVerified, queryKey: ["admin-users", search] } }
-  );
-
-  const { toast } = useToast();
-  const [pricesForm, setPricesForm] = useState({ basic: 0, advanced: 0, protection: 0 });
-  const [creditAmounts, setCreditAmounts] = useState<Record<number, string>>({});
   const [passkeyLoading, setPasskeyLoading] = useState(false);
-  const [teamEmail, setTeamEmail] = useState("");
-  const [teamLoading, setTeamLoading] = useState(false);
   const [showPasscodeForm, setShowPasscodeForm] = useState(false);
+  const [section, setSection] = useState<SectionId>("overview");
 
-  if (planPrices && pricesForm.basic === 0 && pricesForm.advanced === 0 && pricesForm.protection === 0) {
-    setPricesForm(planPrices);
-  }
+  const isSuperAdmin = status?.user?.role === "super_admin" || status?.user?.isSuperAdmin === true;
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,9 +58,8 @@ export default function Admin() {
   const handleBiometricAuth = async () => {
     setPasskeyLoading(true);
     try {
-      const opts = await fetch("/api/admin/passkey/register-options").then(r => r.json());
+      const opts = await fetch("/api/admin/passkey/register-options").then((r) => r.json());
       const challengeBytes = base64urlToBytes(opts.challenge);
-
       const storedCredId = localStorage.getItem("nexus_passkey_cred");
       const requestOpts: PublicKeyCredentialRequestOptions = {
         challenge: challengeBytes as unknown as ArrayBuffer,
@@ -67,10 +70,8 @@ export default function Admin() {
       if (storedCredId) {
         requestOpts.allowCredentials = [{ id: base64urlToBytes(storedCredId) as unknown as ArrayBuffer, type: "public-key" }];
       }
-
       const assertion = (await navigator.credentials.get({ publicKey: requestOpts })) as PublicKeyCredential | null;
       if (!assertion) throw new Error("No credential returned");
-
       const credentialId = bytesToBase64url(new Uint8Array(assertion.rawId));
       const res = await fetch("/api/admin/passkey/auth-verify", {
         method: "POST",
@@ -78,7 +79,6 @@ export default function Admin() {
         body: JSON.stringify({ credentialId }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-
       toast({ title: "Biometric Verified", description: "Admin access granted." });
       refetchAdminCheck();
     } catch (err: any) {
@@ -91,10 +91,9 @@ export default function Admin() {
   const handleRegisterPasskey = async () => {
     setPasskeyLoading(true);
     try {
-      const opts = await fetch("/api/admin/passkey/register-options").then(r => r.json());
+      const opts = await fetch("/api/admin/passkey/register-options").then((r) => r.json());
       const challengeBytes = base64urlToBytes(opts.challenge);
       const userIdBytes = new TextEncoder().encode(opts.userId);
-
       const credential = (await navigator.credentials.create({
         publicKey: {
           challenge: challengeBytes as unknown as ArrayBuffer,
@@ -104,25 +103,19 @@ export default function Admin() {
             { alg: -7, type: "public-key" },
             { alg: -257, type: "public-key" },
           ],
-          authenticatorSelection: {
-            authenticatorAttachment: "platform",
-            userVerification: "required",
-          },
+          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
           timeout: 60000,
         },
       })) as PublicKeyCredential | null;
-
       if (!credential) throw new Error("No credential created");
       const credentialId = bytesToBase64url(new Uint8Array(credential.rawId));
       localStorage.setItem("nexus_passkey_cred", credentialId);
-
       const res = await fetch("/api/admin/passkey/register-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credentialId }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-
       toast({ title: "Passkey Enrolled", description: "Biometric authentication is now active." });
       refetchAdminCheck();
     } catch (err: any) {
@@ -147,58 +140,12 @@ export default function Admin() {
     }
   };
 
-  const handleAddTeamMember = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!teamEmail.trim()) return;
-    setTeamLoading(true);
-    try {
-      const res = await fetch("/api/admin/team-members", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: teamEmail.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      toast({ title: "Team Member Added", description: data.message });
-      setTeamEmail("");
-      refetchUsers();
-    } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setTeamLoading(false);
-    }
-  };
-
-  const handleUpdatePrices = async () => {
-    try {
-      await updatePrices.mutateAsync({ data: pricesForm });
-      toast({ title: "Prices Updated", description: "Plan credit costs updated." });
-      refetchPrices();
-    } catch (err: any) {
-      toast({ title: "Update Failed", description: err.message, variant: "destructive" });
-    }
-  };
-
-  const handleAddCredits = async (userId: number) => {
-    const amount = parseInt(creditAmounts[userId] || "0", 10);
-    if (isNaN(amount) || amount <= 0) return;
-    try {
-      await addUserCredits.mutateAsync({ userId, data: { amount } });
-      toast({ title: "Credits Added", description: `Added ${amount} credits.` });
-      setCreditAmounts(prev => ({ ...prev, [userId]: "" }));
-      refetchUsers();
-    } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
-    }
-  };
-
   if (adminCheck && !adminCheck.isAdmin) {
     return <div className="p-12 text-center font-mono text-destructive">ERROR: NON-ADMIN_ENTITY_DETECTED</div>;
   }
 
   if (adminCheck && !adminCheck.adminPanelVerified) {
     const hasBiometric = adminCheck.hasPasskey && !showPasscodeForm;
-
     return (
       <div className="flex-1 w-full min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background">
         <Card className="w-full max-w-md glass-panel border-destructive/30">
@@ -210,46 +157,24 @@ export default function Admin() {
           <CardContent className="space-y-4">
             {hasBiometric ? (
               <>
-                <Button
-                  onClick={handleBiometricAuth}
-                  disabled={passkeyLoading}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest flex items-center justify-center gap-2"
-                >
+                <Button onClick={handleBiometricAuth} disabled={passkeyLoading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-none uppercase font-bold tracking-widest flex items-center justify-center gap-2">
                   <Fingerprint className="w-4 h-4" />
                   {passkeyLoading ? "Verifying..." : "Verify with Biometric"}
                 </Button>
-                <button
-                  type="button"
-                  onClick={() => setShowPasscodeForm(true)}
-                  className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 font-mono"
-                >
+                <button type="button" onClick={() => setShowPasscodeForm(true)} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 font-mono">
                   Use passcode instead
                 </button>
               </>
             ) : (
               <>
                 <form onSubmit={handleAdminLogin} className="space-y-3">
-                  <Input
-                    type="password"
-                    placeholder="Enter Passcode"
-                    value={passcode}
-                    onChange={e => setPasscode(e.target.value)}
-                    className="bg-black/50 border-destructive/30 focus-visible:ring-destructive font-mono text-center text-lg tracking-widest"
-                  />
-                  <Button
-                    type="submit"
-                    disabled={adminLogin.isPending}
-                    className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-none uppercase font-bold tracking-widest"
-                  >
+                  <Input type="password" placeholder="Enter Passcode" value={passcode} onChange={(e) => setPasscode(e.target.value)} className="bg-black/50 border-destructive/30 focus-visible:ring-destructive font-mono text-center text-lg tracking-widest" />
+                  <Button type="submit" disabled={adminLogin.isPending} className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-none uppercase font-bold tracking-widest">
                     {adminLogin.isPending ? "Authorizing..." : "Authorize"}
                   </Button>
                 </form>
                 {adminCheck?.hasPasskey && (
-                  <button
-                    type="button"
-                    onClick={() => setShowPasscodeForm(false)}
-                    className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 font-mono flex items-center justify-center gap-1.5"
-                  >
+                  <button type="button" onClick={() => setShowPasscodeForm(false)} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 font-mono flex items-center justify-center gap-1.5">
                     <Fingerprint className="w-3.5 h-3.5" /> Use biometric instead
                   </button>
                 )}
@@ -261,167 +186,120 @@ export default function Admin() {
     );
   }
 
+  const visibleNav = NAV.filter((n) => !n.super || isSuperAdmin);
+  const activeNav = visibleNav.find((n) => n.id === section) ?? visibleNav[0];
+
   return (
-    <div className="flex-1 w-full bg-background p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="border-b border-border/50 pb-5 flex items-center gap-3">
-          <ShieldAlert className="text-destructive w-7 h-7" />
-          <h1 className="text-2xl font-bold brand-text text-foreground uppercase tracking-widest">Root Access</h1>
-        </div>
+    <div className="flex-1 w-full bg-background min-h-[calc(100vh-4rem)]">
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-white/8 bg-[#080808] min-h-[calc(100vh-4rem)] p-4 gap-1">
+          <div className="flex items-center gap-2 px-2 pb-4 mb-2 border-b border-white/8">
+            <ShieldAlert className="w-5 h-5 text-primary" />
+            <div>
+              <p className="text-sm font-bold text-foreground tracking-wide">Control Center</p>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{isSuperAdmin ? "Super Admin" : "Admin"}</p>
+            </div>
+          </div>
+          {visibleNav.map((n) => (
+            <button
+              key={n.id}
+              onClick={() => setSection(n.id)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${section === n.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+            >
+              <n.icon className="w-4 h-4 shrink-0" />
+              <span className="truncate">{n.label}</span>
+              {n.super && <Lock className="w-3 h-3 ml-auto text-amber-400/70" />}
+            </button>
+          ))}
+        </aside>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* ── Left column ── */}
-          <div className="md:col-span-1 space-y-5">
-            {/* Plan Pricing */}
-            <Card className="glass-panel border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="font-mono uppercase text-xs text-primary tracking-wider border-b border-primary/20 pb-2">Plan Pricing (CRD)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {(["basic", "advanced", "protection"] as const).map(key => (
-                  <div key={key} className="space-y-1">
-                    <label className="text-xs font-mono text-muted-foreground uppercase">{key === "protection" ? "Protection+" : key.charAt(0).toUpperCase() + key.slice(1)}</label>
-                    <Input type="number" value={pricesForm[key]} onChange={e => setPricesForm(p => ({ ...p, [key]: parseInt(e.target.value) || 0 }))} className="font-mono bg-black/50 h-8 text-sm" />
-                  </div>
-                ))}
-                <Button onClick={handleUpdatePrices} disabled={updatePrices.isPending} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-2 rounded-none text-xs uppercase font-bold tracking-wider">
-                  Update Pricing
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Security — passkey */}
-            <Card className="glass-panel border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="font-mono uppercase text-xs text-primary tracking-wider border-b border-primary/20 pb-2 flex items-center gap-2">
-                  <KeyRound className="w-3.5 h-3.5" /> Security
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {adminCheck?.hasPasskey ? (
-                  <>
-                    <div className="flex items-center gap-2 py-2 px-3 bg-primary/5 border border-primary/20 rounded-sm">
-                      <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
-                      <div>
-                        <p className="text-xs font-mono text-foreground">Passkey Active</p>
-                        <p className="text-[10px] text-muted-foreground">Biometric auth is enabled</p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={handleRemovePasskey}
-                      disabled={passkeyLoading}
-                      variant="outline"
-                      className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 rounded-none text-xs uppercase font-bold tracking-wider flex items-center justify-center gap-1.5"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      {passkeyLoading ? "Removing..." : "Remove Passkey"}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-xs text-muted-foreground font-mono">No biometric enrolled. Register your fingerprint or face ID to skip the passcode.</p>
-                    <Button
-                      onClick={handleRegisterPasskey}
-                      disabled={passkeyLoading}
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-none text-xs uppercase font-bold tracking-wider flex items-center justify-center gap-1.5"
-                    >
-                      <Fingerprint className="w-3.5 h-3.5" />
-                      {passkeyLoading ? "Enrolling..." : "Enroll Biometric"}
-                    </Button>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Team Access */}
-            <Card className="glass-panel border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="font-mono uppercase text-xs text-primary tracking-wider border-b border-primary/20 pb-2 flex items-center gap-2">
-                  <UserPlus className="w-3.5 h-3.5" /> Team Access
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAddTeamMember} className="space-y-2">
-                  <Input
-                    type="email"
-                    placeholder="user@example.com"
-                    value={teamEmail}
-                    onChange={e => setTeamEmail(e.target.value)}
-                    className="font-mono bg-black/50 h-8 text-xs"
-                  />
-                  <Button type="submit" disabled={teamLoading || !teamEmail.trim()} className="w-full bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30 rounded-none text-xs uppercase font-bold tracking-wider">
-                    {teamLoading ? "Adding..." : "Grant Admin Access"}
-                  </Button>
-                </form>
-                <p className="text-[10px] text-muted-foreground font-mono mt-3 leading-relaxed">
-                  The account must already exist. Team members can set up their own biometric or use the shared passcode.
-                </p>
-              </CardContent>
-            </Card>
+        {/* Content */}
+        <main className="flex-1 min-w-0 p-6 md:p-8">
+          {/* Mobile nav */}
+          <div className="md:hidden flex gap-2 overflow-x-auto pb-4 mb-2 -mx-1 px-1">
+            {visibleNav.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => setSection(n.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap ${section === n.id ? "bg-primary/15 text-primary" : "text-muted-foreground bg-white/5"}`}
+              >
+                <n.icon className="w-3.5 h-3.5" /> {n.label}
+              </button>
+            ))}
           </div>
 
-          {/* ── User Directory ── */}
-          <Card className="glass-panel border-border/50 md:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-primary/20">
-              <CardTitle className="font-mono uppercase text-xs text-primary tracking-wider">User Directory</CardTitle>
-              <div className="relative w-56">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search by email..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-7 h-7 text-xs font-mono bg-black/50"
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/50 hover:bg-transparent">
-                    <TableHead className="font-mono text-xs uppercase text-muted-foreground">ID / Name</TableHead>
-                    <TableHead className="font-mono text-xs uppercase text-muted-foreground">Email</TableHead>
-                    <TableHead className="font-mono text-xs uppercase text-muted-foreground text-right">Balance</TableHead>
-                    <TableHead className="font-mono text-xs uppercase text-muted-foreground text-center">Scans</TableHead>
-                    <TableHead className="font-mono text-xs uppercase text-muted-foreground text-right">Credits</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users?.map(user => (
-                    <TableRow key={user.id} className="border-border/50 hover:bg-white/5">
-                      <TableCell>
-                        <div className="font-mono text-xs text-muted-foreground">#{user.id}</div>
-                        <div className="font-medium text-sm">{user.name}</div>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{user.email}</TableCell>
-                      <TableCell className="text-right font-mono font-bold text-primary text-sm">{user.credits} CRD</TableCell>
-                      <TableCell className="text-center font-mono text-xs">{user.totalScans}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Input
-                            type="number"
-                            placeholder="Amt"
-                            className="w-14 h-7 text-xs font-mono px-2 bg-black/50"
-                            value={creditAmounts[user.id] || ""}
-                            onChange={e => setCreditAmounts(p => ({ ...p, [user.id]: e.target.value }))}
-                          />
-                          <Button size="icon" variant="outline" className="h-7 w-7 border-primary/50 text-primary hover:bg-primary/20" onClick={() => handleAddCredits(user.id)}>
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!users || users.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center font-mono text-muted-foreground">NO_RECORDS_FOUND</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-foreground">{activeNav.label}</h1>
+            <p className="text-sm text-muted-foreground mt-1">{sectionDescription(activeNav.id)}</p>
+          </div>
+
+          {section === "overview" && <AdminOverview />}
+          {section === "users" && <AdminUsers />}
+          {section === "admins" && isSuperAdmin && <AdminAdmins />}
+          {section === "support" && <AdminSupport />}
+          {section === "scans" && <AdminScans />}
+          {section === "reports" && <AdminReports />}
+          {section === "pricing" && isSuperAdmin && <AdminPricing />}
+          {section === "audit" && isSuperAdmin && <AdminAuditLogs />}
+          {section === "security" && (
+            <SecurityPanel
+              hasPasskey={!!adminCheck?.hasPasskey}
+              loading={passkeyLoading}
+              onEnroll={handleRegisterPasskey}
+              onRemove={handleRemovePasskey}
+            />
+          )}
+        </main>
       </div>
+    </div>
+  );
+}
+
+function sectionDescription(id: SectionId): string {
+  switch (id) {
+    case "overview": return "Platform metrics and activity at a glance.";
+    case "users": return "Manage accounts, plans, credits and access.";
+    case "admins": return "Grant or revoke administrator privileges.";
+    case "support": return "Respond to customer support tickets.";
+    case "scans": return "Monitor, reassign and manage scan jobs.";
+    case "reports": return "Generated scan reports across all users.";
+    case "pricing": return "Edit the public pricing plans.";
+    case "audit": return "Immutable log of administrative actions.";
+    case "security": return "Manage your biometric passkey.";
+  }
+}
+
+function SecurityPanel({ hasPasskey, loading, onEnroll, onRemove }: { hasPasskey: boolean; loading: boolean; onEnroll: () => void; onRemove: () => void }) {
+  return (
+    <div className="max-w-lg rounded-2xl border border-white/8 bg-[#0c0c0c] p-6 space-y-4">
+      <div className="flex items-center gap-2 text-foreground">
+        <KeyRound className="w-5 h-5 text-primary" />
+        <h3 className="text-base font-semibold">Biometric Passkey</h3>
+      </div>
+      {hasPasskey ? (
+        <>
+          <div className="flex items-center gap-3 py-3 px-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
+            <div>
+              <p className="text-sm text-foreground">Passkey Active</p>
+              <p className="text-xs text-muted-foreground">Biometric auth lets you skip the passcode.</p>
+            </div>
+          </div>
+          <Button onClick={onRemove} disabled={loading} variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10">
+            <Trash2 className="w-4 h-4 mr-2" />
+            {loading ? "Removing..." : "Remove Passkey"}
+          </Button>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground">No biometric enrolled. Register your fingerprint or face ID to skip the passcode on future visits.</p>
+          <Button onClick={onEnroll} disabled={loading} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Fingerprint className="w-4 h-4 mr-2" />
+            {loading ? "Enrolling..." : "Enroll Biometric"}
+          </Button>
+        </>
+      )}
     </div>
   );
 }
