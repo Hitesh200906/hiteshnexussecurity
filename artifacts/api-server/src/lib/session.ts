@@ -28,15 +28,15 @@ function getCookieOptions(maxAgeMs?: number) {
 // live on different domains (e.g. Vercel + Render), where browsers drop the
 // cross-site session cookie. The token returned at login is the same session id.
 function getSessionId(req: Request): string | null {
-  const cookieId = req.cookies?.[SESSION_COOKIE];
-  if (cookieId) return cookieId;
-
+  // Explicit bearer auth wins over the cookie: in the split-domain deployment the
+  // bearer token is the authoritative session, and a stale cookie left on the API
+  // domain must not shadow the token the current request actually sent.
   const auth = req.headers?.authorization;
   if (auth && auth.startsWith("Bearer ")) {
     const token = auth.slice(7).trim();
     if (token) return token;
   }
-  return null;
+  return req.cookies?.[SESSION_COOKIE] ?? null;
 }
 
 export async function createSession(userId: number, res: Response): Promise<string> {
