@@ -1,8 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { runSeeds } from "./lib/seed";
-
-void runSeeds();
+import { dbConnectionInfo, verifyDbConnection } from "@workspace/db";
 
 const rawPort = process.env["PORT"];
 
@@ -18,11 +17,35 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
+async function bootstrap(): Promise<void> {
+  logger.info(
+    {
+      host: dbConnectionInfo.host,
+      port: dbConnectionInfo.port,
+      database: dbConnectionInfo.database,
+      user: dbConnectionInfo.user,
+    },
+    "Database configuration",
+  );
+
+  try {
+    await verifyDbConnection();
+    logger.info("Database connection verified (SELECT 1 ok)");
+  } catch (err) {
+    logger.error({ err }, "Database connection failed at startup");
     process.exit(1);
   }
 
-  logger.info({ port }, "Server listening");
-});
+  await runSeeds();
+
+  app.listen(port, (err) => {
+    if (err) {
+      logger.error({ err }, "Error listening on port");
+      process.exit(1);
+    }
+
+    logger.info({ port }, "Server listening");
+  });
+}
+
+void bootstrap();
