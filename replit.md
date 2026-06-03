@@ -78,9 +78,10 @@ The app deploys as a **single Vercel project** from the repo root (`vercel.json`
 
 ## Gotchas
 
-- Admin login is two-step: must be logged in as `nexussecurity777@gmail.com` AND enter passcode `nexus admin` (or env var `ADMIN_PASSCODE`)
+- Super admin is `hitesh.tanwar8318@gmail.com` (defined in `artifacts/api-server/src/lib/seed.ts`). Any account with this email is promoted to `super_admin` both at boot (seed) and at login. The legacy `nexussecurity777@gmail.com` is demoted to a regular `admin`.
+- Admin login is two-step: must be logged in as an admin/super-admin account AND enter passcode `nexus admin` (or env var `ADMIN_PASSCODE`)
 - Demo user: `demo@nexussecurity.com` / `demo123` (15 credits)
-- Admin user: `nexussecurity777@gmail.com` / set via `hashPassword('nexus_admin_2026')`
+- Super admin password: only set for a freshly seeded account (`SUPER_ADMIN_PASSWORD` env or fallback). If the account already exists, its existing password is preserved.
 - Run `pnpm run typecheck:libs` after adding new DB schema files before running API server typecheck
 - Google OAuth (`/api/login/google`) is a stub — needs real OAuth implementation
 

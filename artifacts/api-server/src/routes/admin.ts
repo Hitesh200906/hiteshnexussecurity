@@ -148,6 +148,44 @@ function reportToDto(r: typeof reportsTable.$inferSelect, scan?: typeof scanJobs
   };
 }
 
+// ── Daily series helpers (for the 14-day growth chart) ────────────
+function dayKey(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function lastNDays(days: number): { label: string; key: string; end: Date }[] {
+  const now = new Date();
+  const out: { label: string; key: string; end: Date }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    out.push({
+      label: d.toLocaleString("en-US", { month: "short", day: "numeric" }),
+      key: dayKey(d),
+      end: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1),
+    });
+  }
+  return out;
+}
+
+// Count of events per day over the last N days.
+function dailyCounts(dates: Date[], days: number): { label: string; value: number }[] {
+  const buckets = lastNDays(days).map((b) => ({ label: b.label, key: b.key, value: 0 }));
+  const idx = new Map(buckets.map((b, i) => [b.key, i]));
+  for (const d of dates) {
+    const i = idx.get(dayKey(d));
+    if (i !== undefined) buckets[i].value++;
+  }
+  return buckets.map((b) => ({ label: b.label, value: b.value }));
+}
+
+// Cumulative count of events up to and including each day over the last N days.
+function cumulativeDaily(dates: Date[], days: number): { label: string; value: number }[] {
+  return lastNDays(days).map((b) => ({
+    label: b.label,
+    value: dates.filter((d) => d < b.end).length,
+  }));
+}
+
 // Build N monthly buckets ending with the current month.
 function monthlyBuckets(rows: { date: Date; value: number }[], months = 6): { label: string; value: number }[] {
   const now = new Date();
@@ -472,38 +510,78 @@ router.put("/admin/plan-prices", async (req, res): Promise<void> => {
 
 // ── Analytics overview ────────────────────────────────────────────
 
+const EMPTY_ANALYTICS = {
+  totalUsers: 0,
+  activeUsers: 0,
+  totalScans: 0,
+  completedScans: 0,
+  pendingScans: 0,
+  revenue: 0,
+  ticketsOpen: 0,
+  ticketsClosed: 0,
+  userGrowth: [] as { label: string; value: number }[],
+  scanActivity: [] as { label: string; value: number }[],
+  revenueGrowth: [] as { label: string; value: number }[],
+  planDistribution: [] as { label: string; value: number }[],
+};
+
 router.get("/admin/analytics", async (req, res): Promise<void> => {
   const session = await requireVerifiedAdmin(req, res);
   if (!session) return;
 
-  const users = await db.select().from(usersTable);
-  const scans = await db.select().from(scanJobsTable);
-  const tickets = await db.select().from(supportTicketsTable);
+  try {
+    // Core tables must exist; ancillary tables (tickets, pricing) degrade gracefully
+    // so a partial/out-of-date schema never blocks the Control Center from loading.
+    const [users, scans] = await Promise.all([
+      db.select().from(usersTable),
+      db.select().from(scanJobsTable),
+    ]);
+    const tickets = await db.select().from(supportTicketsTable).catch(() => [] as (typeof supportTicketsTable.$inferSelect)[]);
+    const plans = await db.select().from(pricingPlansTable).catch(() => [] as (typeof pricingPlansTable.$inferSelect)[]);
 
-  const completedScans = scans.filter((s) => s.status === "completed").length;
-  const pendingScans = scans.filter((s) => s.status !== "completed" && s.status !== "failed").length;
-  const revenue = scans.reduce((sum, s) => sum + (s.creditsSpent ?? 0), 0);
-  const ticketsClosed = tickets.filter((t) => t.status === "closed" || t.status === "resolved").length;
+    const completedScans = scans.filter((s) => s.status === "completed").length;
+    const pendingScans = scans.filter((s) => s.status !== "completed" && s.status !== "failed").length;
+    const ticketsClosed = tickets.filter((t) => t.status === "closed" || t.status === "resolved").length;
 
-  const planDistribution = ["basic", "advanced", "protection"].map((plan) => ({
-    label: plan.charAt(0).toUpperCase() + plan.slice(1),
-    value: scans.filter((s) => s.plan === plan).length,
-  }));
+    // Monthly recurring revenue from the plan each active user is subscribed to.
+    const priceByKey = new Map<string, number>();
+    const nameByKey = new Map<string, string>();
+    for (const p of plans) {
+      priceByKey.set(p.id.toLowerCase(), p.price);
+      priceByKey.set(p.name.toLowerCase(), p.price);
+      nameByKey.set(p.id.toLowerCase(), p.name);
+      nameByKey.set(p.name.toLowerCase(), p.name);
+    }
 
-  res.json({
-    totalUsers: users.length,
-    activeUsers: users.filter((u) => !u.isBanned && !u.isSuspended).length,
-    totalScans: scans.length,
-    completedScans,
-    pendingScans,
-    revenue,
-    ticketsOpen: tickets.length - ticketsClosed,
-    ticketsClosed,
-    userGrowth: monthlyBuckets(users.map((u) => ({ date: u.createdAt, value: 1 }))),
-    scanActivity: monthlyBuckets(scans.map((s) => ({ date: s.createdAt, value: 1 }))),
-    revenueGrowth: monthlyBuckets(scans.map((s) => ({ date: s.createdAt, value: s.creditsSpent ?? 0 }))),
-    planDistribution,
-  });
+    let revenue = 0;
+    const distCounts = new Map<string, number>();
+    for (const u of users) {
+      const key = (u.currentPlan ?? "").toLowerCase();
+      if (!key) continue;
+      revenue += priceByKey.get(key) ?? 0;
+      const label = nameByKey.get(key) ?? key.charAt(0).toUpperCase() + key.slice(1);
+      distCounts.set(label, (distCounts.get(label) ?? 0) + 1);
+    }
+    const planDistribution = [...distCounts.entries()].map(([label, value]) => ({ label, value }));
+
+    res.json({
+      totalUsers: users.length,
+      activeUsers: users.filter((u) => !u.isBanned && !u.isSuspended).length,
+      totalScans: scans.length,
+      completedScans,
+      pendingScans,
+      revenue,
+      ticketsOpen: tickets.length - ticketsClosed,
+      ticketsClosed,
+      userGrowth: cumulativeDaily(users.map((u) => u.createdAt), 14),
+      scanActivity: dailyCounts(scans.map((s) => s.createdAt), 14),
+      revenueGrowth: monthlyBuckets(scans.map((s) => ({ date: s.createdAt, value: s.creditsSpent ?? 0 }))),
+      planDistribution,
+    });
+  } catch (err) {
+    req.log?.error?.({ err }, "admin analytics query failed");
+    res.json(EMPTY_ANALYTICS);
+  }
 });
 
 // ── Single user detail + actions ──────────────────────────────────
