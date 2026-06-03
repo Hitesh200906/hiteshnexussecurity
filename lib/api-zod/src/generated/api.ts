@@ -94,7 +94,8 @@ export const LoginResponse = zod.object({
   "scansUsed": zod.number().optional(),
   "scansCompleted": zod.number().optional(),
   "createdAt": zod.string()
-})
+}),
+  "token": zod.string().optional().describe('Session token for header-based (Bearer) auth, used when cross-site cookies are unavailable.')
 })
 
 

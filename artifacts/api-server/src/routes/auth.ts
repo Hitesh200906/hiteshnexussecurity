@@ -190,12 +190,13 @@ router.post("/auth/verify-email", async (req, res): Promise<void> => {
     .where(eq(usersTable.id, user.id))
     .returning();
 
-  await createSession(updated.id, res);
+  const token = await createSession(updated.id, res);
 
   logger.info({ userId: updated.id, email: normalizedEmail }, "User verified email and signed in");
   res.status(201).json({
     message: "Account created successfully. Welcome to Nexus Security.",
     user: publicUser(updated),
+    token,
   });
 });
 
@@ -273,8 +274,8 @@ router.post("/auth/signup", async (req, res): Promise<void> => {
     .values({ name: name.trim(), email: normalizedEmail, passwordHash, credits: 5, isVerified: true })
     .returning();
 
-  await createSession(user.id, res);
-  res.status(201).json({ message: "Account created successfully", user: publicUser(user) });
+  const token = await createSession(user.id, res);
+  res.status(201).json({ message: "Account created successfully", user: publicUser(user), token });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -344,8 +345,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     user.role = "admin";
   }
 
-  await createSession(user.id, res);
-  res.json({ message: "Login successful", user: publicUser(user) });
+  const token = await createSession(user.id, res);
+  res.json({ message: "Login successful", user: publicUser(user), token });
 });
 
 router.post("/auth/logout", async (req, res): Promise<void> => {

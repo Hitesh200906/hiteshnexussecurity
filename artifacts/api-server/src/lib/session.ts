@@ -23,6 +23,22 @@ function getCookieOptions(maxAgeMs?: number) {
   };
 }
 
+// Resolve the session id from either the cookie OR an Authorization: Bearer
+// header. The header path is what makes auth work when the frontend and API
+// live on different domains (e.g. Vercel + Render), where browsers drop the
+// cross-site session cookie. The token returned at login is the same session id.
+function getSessionId(req: Request): string | null {
+  const cookieId = req.cookies?.[SESSION_COOKIE];
+  if (cookieId) return cookieId;
+
+  const auth = req.headers?.authorization;
+  if (auth && auth.startsWith("Bearer ")) {
+    const token = auth.slice(7).trim();
+    if (token) return token;
+  }
+  return null;
+}
+
 export async function createSession(userId: number, res: Response): Promise<string> {
   const sessionId = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
@@ -39,7 +55,7 @@ export async function createSession(userId: number, res: Response): Promise<stri
 }
 
 export async function getSessionUser(req: Request) {
-  const sessionId = req.cookies?.[SESSION_COOKIE];
+  const sessionId = getSessionId(req);
   if (!sessionId) return null;
 
   const [session] = await db
@@ -65,7 +81,7 @@ export async function getSessionUser(req: Request) {
 }
 
 export async function destroySession(req: Request, res: Response): Promise<void> {
-  const sessionId = req.cookies?.[SESSION_COOKIE];
+  const sessionId = getSessionId(req);
   if (sessionId) {
     try {
       await db.delete(sessionsTable).where(eq(sessionsTable.id, sessionId));
@@ -77,7 +93,7 @@ export async function destroySession(req: Request, res: Response): Promise<void>
 }
 
 export async function isAdminVerified(req: Request): Promise<boolean> {
-  const sessionId = req.cookies?.[SESSION_COOKIE];
+  const sessionId = getSessionId(req);
   if (!sessionId) return false;
 
   const [session] = await db
@@ -89,7 +105,7 @@ export async function isAdminVerified(req: Request): Promise<boolean> {
 }
 
 export async function setAdminVerified(req: Request): Promise<void> {
-  const sessionId = req.cookies?.[SESSION_COOKIE];
+  const sessionId = getSessionId(req);
   if (!sessionId) return;
 
   await db

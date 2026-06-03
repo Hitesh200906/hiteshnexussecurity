@@ -10,4 +10,6 @@ import type { UserProfile } from './userProfile';
 export interface AuthResponse {
   message: string;
   user: UserProfile;
+  /** Session token for header-based (Bearer) auth, used when cross-site cookies are unavailable. */
+  token?: string;
 }
